@@ -1,53 +1,53 @@
 #!/bin/bash
 # anti-hallucination-guard -- pre-commit hook
-# Блокирует commit, если worklog.md не обновлён.
-# Автоматически установлен setup.sh.
+# Blocks commit if worklog.md is not updated.
+# Automatically installed by setup.sh.
 
 WORKLOG="worklog.md"
-MAX_AGE=600  # 10 минут
+MAX_AGE=600  # 10 minutes
 
-# 1. Проверяем существование
+# 1. Check existence
 if [ ! -f "$WORKLOG" ]; then
     echo ""
-    echo "  ОШИБКА: worklog.md не найден!"
-    echo "  Создай файл и опиши проделанную работу."
+    echo "  ERROR: worklog.md not found!"
+    echo "  Create the file and describe the work done."
     echo ""
     exit 1
 fi
 
-# 2. Проверяем свежесть
+# 2. Check freshness
 LAST_MODIFIED=$(stat -c %Y "$WORKLOG" 2>/dev/null)
 NOW=$(date +%s)
 DIFF=$((NOW - LAST_MODIFIED))
 
 if [ "$DIFF" -gt "$MAX_AGE" ]; then
     echo ""
-    echo "  ОШИБКА: worklog.md не обновлялся более $((MAX_AGE/60)) минут!"
-    echo "  Последнее обновление: $((DIFF/60)) мин назад"
-    echo "  Обнови worklog.md перед коммитом."
+    echo "  ERROR: worklog.md not updated for over $((MAX_AGE/60)) minutes!"
+    echo "  Last update: $((DIFF/60)) min ago"
+    echo "  Update worklog.md before committing."
     echo ""
     exit 1
 fi
 
-# 3. Проверяем минимальный размер
+# 3. Check minimum size
 SIZE=$(wc -c < "$WORKLOG")
 if [ "$SIZE" -lt 50 ]; then
     echo ""
-    echo "  ОШИБКА: worklog.md пуст (менее 50 байт)!"
-    echo "  Опиши проделанную работу."
+    echo "  ERROR: worklog.md is empty (less than 50 bytes)!"
+    echo "  Describe the work done."
     echo ""
     exit 1
 fi
 
-# 4. Проверяем наличие стандартных блоков
+# 4. Check for standard blocks
 BLOCK_COUNT=$(grep -c '^---$' "$WORKLOG" 2>/dev/null)
 if [ "$BLOCK_COUNT" -lt 2 ]; then
     echo ""
-    echo "  ОШИБКА: worklog.md не содержит стандартных блоков!"
-    echo "  Формат: --- / Task ID / Work Log / Stage Summary / ---"
+    echo "  ERROR: worklog.md does not contain standard blocks!"
+    echo "  Format: --- / Task ID / Work Log / Stage Summary / ---"
     echo ""
     exit 1
 fi
 
-echo "  OK: worklog.md актуален ($BLOCK_COUNT блоков)"
+echo "  OK: worklog.md is up to date ($BLOCK_COUNT blocks)"
 exit 0

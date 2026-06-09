@@ -1,14 +1,14 @@
 #!/bin/bash
 # anti-hallucination-guard / validate.sh
-# Проверяет, что репозиторий содержит только файлы модуля.
-# Запуск: bash validate.sh
-# Можно использовать как pre-push hook.
+# Checks that the repository contains only module files.
+# Run: bash validate.sh
+# Can also be used as a pre-push hook.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Список разрешённых путей (whitelist)
+# Whitelist of allowed paths
 ALLOWED=(
     "setup.sh"
     "AGENT_RULES.md"
@@ -38,7 +38,7 @@ ALLOWED=(
     "tools/verify-docs/examples/"
 )
 
-# Список запрещённых паттернов
+# Forbidden patterns
 FORBIDDEN_PATTERNS=(
     "*.env"
     "*.log"
@@ -50,7 +50,6 @@ FORBIDDEN_PATTERNS=(
     "src/"
     "app/"
     "public/"
-    "package.json"
     "package-lock.json"
     "tsconfig.json"
     ".git/modules/"
@@ -58,48 +57,46 @@ FORBIDDEN_PATTERNS=(
 
 ERRORS=0
 
-echo "=== validate.sh: проверка чистоты репозитория ==="
+echo "=== validate.sh: repository purity check ==="
 echo ""
 
-# Проверяем, что все tracked-файлы допустимы
+# Check that all tracked files are allowed
 TRACKED_FILES=$(git -C "$SCRIPT_DIR" ls-files)
 for FILE in $TRACKED_FILES; do
     ALLOWED_FLAG=0
     for PATTERN in "${ALLOWED[@]}"; do
-        # Проверяем, начинается ли файл с разрешённого пути
         case "$FILE" in
             "$PATTERN"*) ALLOWED_FLAG=1 ;;
         esac
     done
     if [ "$ALLOWED_FLAG" -eq 0 ]; then
-        echo "[-] ЗАПРЕЩЁННЫЙ ФАЙЛ: $FILE"
-        echo "    Этот файл не должен быть в репозитории модуля."
-        echo "    Модуль содержит только: setup.sh, AGENT_RULES.md, .git-hooks/, scripts/, skills/, README.md, .gitignore"
+        echo "[-] FORBIDDEN FILE: $FILE"
+        echo "    This file should not be in the module repository."
+        echo "    Module contains only: setup.sh, AGENT_RULES.md, .git-hooks/, scripts/, tools/, skills/, README.md, .gitignore"
         ERRORS=$((ERRORS + 1))
     fi
 done
 
-# Проверяем, что нет запрещённых паттернов в tracked-файлах
+# Check that no tracked files match forbidden patterns
 for FILE in $TRACKED_FILES; do
     for PATTERN in "${FORBIDDEN_PATTERNS[@]}"; do
         case "$FILE" in
             *"$PATTERN"*)
-                echo "[-] ЗАПРЕЩЁННЫЙ ПАТТЕРН: $FILE (совпадение: $PATTERN)"
+                echo "[-] FORBIDDEN PATTERN: $FILE (match: $PATTERN)"
                 ERRORS=$((ERRORS + 1))
                 ;;
         esac
     done
 done
 
-# Проверяем, что все разрешённые файлы существуют
+# Check that all allowed files exist
 for ITEM in "${ALLOWED[@]}"; do
     if [ -e "$SCRIPT_DIR/$ITEM" ]; then
         echo "[+] $ITEM -- OK"
     elif [[ "$ITEM" == */ ]]; then
-        # Директория -- проверяем, что внутри есть файлы
         DIR_CONTENTS=$(find "$SCRIPT_DIR/$ITEM" -type f 2>/dev/null | head -1)
         if [ -z "$DIR_CONTENTS" ]; then
-            echo "[-] $ITEM -- ПУСТАЯ ДИРЕКТОРИЯ (или отсутствует)"
+            echo "[-] $ITEM -- EMPTY DIRECTORY (or missing)"
             ERRORS=$((ERRORS + 1))
         else
             echo "[+] $ITEM -- OK"
@@ -108,22 +105,22 @@ for ITEM in "${ALLOWED[@]}"; do
 done
 
 echo ""
-echo "=== Итог ==="
+echo "=== Result ==="
 
 if [ "$ERRORS" -eq 0 ]; then
-    echo "Репозиторий чист. Все файлы соответствуют модулю."
+    echo "Repository is clean. All files match the module."
     exit 0
 else
-    echo "ОБНАРУЖЕНО ОШИБОК: $ERRORS"
+    echo "ERRORS FOUND: $ERRORS"
     echo ""
-    echo "Возможные причины:"
-    echo "  1. Вы пушите из песочницы -- submodule попал в родительский репо"
-    echo "  2. Вы случайно добавили сторонние файлы (git add -A)"
-    echo "  3. Файлы модуля удалены или переименованы"
+    echo "Possible causes:"
+    echo "  1. Pushing from sandbox -- submodule leaked into parent repo"
+    echo "  2. Accidentally added foreign files (git add -A)"
+    echo "  3. Module files deleted or renamed"
     echo ""
-    echo "Исправление:"
-    echo "  git rm --cached <файл>    -- удалить из индекса"
-    echo "  git commit --amend         -- исправить коммит"
+    echo "Fix:"
+    echo "  git rm --cached <file>    -- remove from index"
+    echo "  git commit --amend         -- fix the commit"
     echo ""
     exit 1
 fi

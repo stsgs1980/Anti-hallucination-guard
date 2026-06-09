@@ -1,14 +1,14 @@
 #!/bin/bash
 # ============================================================
 # anti-hallucination-guard / setup.sh
-# Установка анти-халлюцинационных механизмов в проект.
-# Запуск из корня проекта:
+# Installs anti-hallucination mechanisms into a project.
+# Run from project root:
 #   bash path/to/anti-hallucination-guard/setup.sh
 # ============================================================
 
 set -euo pipefail
 
-# --- Конфигурация ---
+# --- Configuration ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(pwd)"
 WORKLOG="$PROJECT_ROOT/worklog.md"
@@ -20,7 +20,7 @@ CHECK_SCRIPT="$PROJECT_ROOT/scripts/check-agent.sh"
 AUDIT_SCRIPT="$PROJECT_ROOT/scripts/audit.sh"
 VALIDATE_SCRIPT="$PROJECT_ROOT/scripts/validate.sh"
 
-# Цвета для терминала (только если есть TTY)
+# Terminal colors (only when TTY is available)
 if [ -t 1 ]; then
     GREEN="[32m"
     RED="[31m"
@@ -37,7 +37,7 @@ ok()   { echo -e "${GREEN}[OK]${RESET} $1"; }
 err()  { echo -e "${RED}[ERROR]${RESET} $1"; }
 warn() { echo -e "${YELLOW}[WARN]${RESET} $1"; }
 
-# --- Проверки ---
+# --- Checks ---
 echo ""
 echo "=== anti-hallucination-guard: setup ==="
 echo "Project root: $PROJECT_ROOT"
@@ -45,199 +45,196 @@ echo "Module dir:   $SCRIPT_DIR"
 echo ""
 
 if [ ! -d "$PROJECT_ROOT/.git" ]; then
-    warn "Git не инициализирован в проекте."
-    read -rp "Инициализировать git сейчас? (y/N): " answer
+    warn "Git is not initialized in this project."
+    read -rp "Initialize git now? (y/N): " answer
     if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
         git init "$PROJECT_ROOT"
         ok "git init"
     else
-        err "Git нужен для работы хуков. Выход."
+        err "Git is required for hooks to work. Exiting."
         exit 1
     fi
 fi
 
 # --- 1. AGENT_RULES.md ---
 if [ -f "$RULES" ]; then
-    warn "AGENT_RULES.md уже существует -- пропускаю (не перезаписываю)"
+    warn "AGENT_RULES.md already exists -- skipping (will not overwrite)"
 else
     cp "$SCRIPT_DIR/AGENT_RULES.md" "$RULES"
-    ok "AGENT_RULES.md создан"
+    ok "AGENT_RULES.md created"
 fi
 
 # --- 2. worklog.md ---
 if [ -f "$WORKLOG" ]; then
-    warn "worklog.md уже существует -- пропускаю (не перезаписываю)"
+    warn "worklog.md already exists -- skipping (will not overwrite)"
 else
     cat > "$WORKLOG" << 'WORKLOG_EOF'
 ---
 Task ID: 0
 Agent: setup
-Task: Инициализация anti-hallucination-guard
+Task: anti-hallucination-guard initialization
 
 Work Log:
-- Запущен setup.sh
-- AGENT_RULES.md создан
-- Pre-commit hook установлен
-- Скрипты мониторинга скопированы
+- setup.sh executed
+- AGENT_RULES.md created
+- Pre-commit hook installed
+- Monitoring scripts copied
 
 Stage Summary:
-- Механизмы активны
-- Начинаем работу
+- Mechanisms active
+- Ready to start work
 ---
 WORKLOG_EOF
-    ok "worklog.md создан"
+    ok "worklog.md created"
 fi
 
 # --- 3. Pre-commit hook ---
 mkdir -p "$HOOK_DIR"
 
-# Проверяем, не установлен ли уже наш хук
 if [ -f "$HOOK_DIR/pre-commit" ]; then
-    CURRENT_HASH="$(md5sum "$HOOK_DIR/pre-commit" 2>/dev/null | cut -d' ' -f1)"
     EXPECTED_MARKER="anti-hallucination-guard"
     if grep -q "$EXPECTED_MARKER" "$HOOK_DIR/pre-commit" 2>/dev/null; then
-        warn "pre-commit hook уже установлен (наш) -- обновляю"
+        warn "pre-commit hook already installed (ours) -- updating"
         cp "$HOOK_SRC" "$HOOK_DIR/pre-commit"
         chmod +x "$HOOK_DIR/pre-commit"
-        ok "pre-commit hook обновлён"
+        ok "pre-commit hook updated"
     else
-        warn "pre-commit hook уже существует (чужой) -- не перезаписываю"
-        echo "  Для установки вручную скопируй:"
+        warn "pre-commit hook already exists (foreign) -- will not overwrite"
+        echo "  To install manually:"
         echo "  cp $HOOK_SRC $HOOK_DIR/pre-commit"
     fi
 else
     cp "$HOOK_SRC" "$HOOK_DIR/pre-commit"
     chmod +x "$HOOK_DIR/pre-commit"
-    ok "pre-commit hook установлен"
+    ok "pre-commit hook installed"
 fi
 
-# --- 4. Pre-push hook (защита модуля) ---
+# --- 4. Pre-push hook (module protection) ---
 if [ -f "$HOOK_DIR/pre-push" ]; then
-    warn "pre-push hook уже существует -- пропускаю"
+    warn "pre-push hook already exists -- skipping"
 else
     cp "$PUSH_HOOK_SRC" "$HOOK_DIR/pre-push"
     chmod +x "$HOOK_DIR/pre-push" 2>/dev/null || true
-    ok "pre-push hook установлен"
+    ok "pre-push hook installed"
 fi
 
-# --- 5. Скрипты мониторинга ---
+# --- 5. Monitoring scripts ---
 mkdir -p "$PROJECT_ROOT/scripts"
 
 if [ -f "$VALIDATE_SCRIPT" ]; then
-    warn "scripts/validate.sh уже существует -- пропускаю"
+    warn "scripts/validate.sh already exists -- skipping"
 else
     cp "$SCRIPT_DIR/scripts/validate.sh" "$VALIDATE_SCRIPT"
     chmod +x "$VALIDATE_SCRIPT" 2>/dev/null || true
-    ok "scripts/validate.sh создан"
+    ok "scripts/validate.sh created"
 fi
 
 if [ -f "$CHECK_SCRIPT" ]; then
-    warn "scripts/check-agent.sh уже существует -- пропускаю"
+    warn "scripts/check-agent.sh already exists -- skipping"
 else
     cp "$SCRIPT_DIR/scripts/check-agent.sh" "$CHECK_SCRIPT"
     chmod +x "$CHECK_SCRIPT"
-    ok "scripts/check-agent.sh создан"
+    ok "scripts/check-agent.sh created"
 fi
 
 if [ -f "$AUDIT_SCRIPT" ]; then
-    warn "scripts/audit.sh уже существует -- пропускаю"
+    warn "scripts/audit.sh already exists -- skipping"
 else
     cp "$SCRIPT_DIR/scripts/audit.sh" "$AUDIT_SCRIPT"
     chmod +x "$AUDIT_SCRIPT"
-    ok "scripts/audit.sh создан"
+    ok "scripts/audit.sh created"
 fi
 
-# --- 6. Skill (если skills/ существует в проекте) ---
+# --- 6. Skill (if skills/ exists in project) ---
 if [ -d "$PROJECT_ROOT/skills" ]; then
     SKILL_DIR="$PROJECT_ROOT/skills/anti-hallucination-guard"
     if [ -d "$SKILL_DIR" ]; then
-        warn "skills/anti-hallucination-guard уже существует -- пропускаю"
+        warn "skills/anti-hallucination-guard already exists -- skipping"
     else
         cp -r "$SCRIPT_DIR/skills/anti-hallucination-guard" "$SKILL_DIR"
-        ok "skills/anti-hallucination-guard создан"
+        ok "skills/anti-hallucination-guard created"
     fi
 else
-    warn "skills/ не найден -- skill не установлен (не требуется для Z.ai)"
+    warn "skills/ not found -- skill not installed (not required for Z.ai)"
 fi
 
-# --- 7. verify-docs (опционально, требует bun) ---
+# --- 7. verify-docs (optional, requires bun) ---
 VERIFY_DOCS_DIR="$SCRIPT_DIR/tools/verify-docs"
 VERIFY_DOCS_PKG="$PROJECT_ROOT/tools/verify-docs"
 
 if [ -d "$VERIFY_DOCS_DIR" ] && command -v bun &>/dev/null; then
     if [ -d "$VERIFY_DOCS_PKG" ]; then
-        warn "tools/verify-docs уже существует -- пропускаю"
+        warn "tools/verify-docs already exists -- skipping"
     else
         mkdir -p "$PROJECT_ROOT/tools"
         cp -r "$VERIFY_DOCS_DIR" "$VERIFY_DOCS_PKG"
         cd "$VERIFY_DOCS_PKG"
         bun install 2>/dev/null || true
         cd "$PROJECT_ROOT"
-        ok "tools/verify-docs установлен (bun link: bun run tools/verify-docs/src/cli.ts)"
+        ok "tools/verify-docs installed (run: bun run tools/verify-docs/src/cli.ts)"
     fi
 
-    # Создать verify-docs.json если нет
+    # Create verify-docs.json if missing
     if [ ! -f "$PROJECT_ROOT/verify-docs.json" ]; then
-        warn "verify-docs.json не найден -- создай вручную или запусти: bun run tools/verify-docs/src/init.ts"
+        warn "verify-docs.json not found -- create manually or run: bun run tools/verify-docs/src/init.ts"
     fi
 
-    # Обновить pre-commit: добавить verify-docs если его там нет
+    # Add verify-docs to pre-commit hook if not already there
     if grep -q "verify-docs" "$HOOK_DIR/pre-commit" 2>/dev/null; then
-        ok "verify-docs уже в pre-commit hook"
+        ok "verify-docs already in pre-commit hook"
     else
-        # Добавить секцию verify-docs в конец pre-commit hook
         cat >> "$HOOK_DIR/pre-commit" << 'VERIFY_DOCS_HOOK'
 
-# --- verify-docs: проверка чисел в README ---
+# --- verify-docs: check README numbers ---
 if command -v bun &>/dev/null && [ -f "verify-docs.json" ]; then
     VERIFY_RESULT=$(bun run tools/verify-docs/src/cli.ts --ci 2>&1)
     VERIFY_EXIT=$?
     if [ "$VERIFY_EXIT" -ne 0 ]; then
         echo ""
-        echo "  ОШИБКА: verify-docs обнаружил расхождение!"
+        echo "  ERROR: verify-docs found a mismatch!"
         echo ""
         echo "$VERIFY_RESULT"
         echo ""
-        echo "  Исправь числа в README или в verify-docs.json."
-        echo "  Или обойди: git commit --no-verify"
+        echo "  Fix the numbers in README or in verify-docs.json."
+        echo "  Or bypass: git commit --no-verify"
         echo ""
         exit 1
     fi
-    echo "  OK: verify-docs пройден"
+    echo "  OK: verify-docs passed"
 fi
 VERIFY_DOCS_HOOK
-        ok "verify-docs добавлен в pre-commit hook"
+        ok "verify-docs added to pre-commit hook"
     fi
 elif [ -d "$VERIFY_DOCS_DIR" ]; then
-    warn "verify-docs пропущен: bun не найден (установи: curl -fsSL https://bun.sh/install | bash)"
+    warn "verify-docs skipped: bun not found (install: curl -fsSL https://bun.sh/install | bash)"
 else
-    warn "verify-docs не найден в модуле -- пропускаю"
+    warn "verify-docs not found in module -- skipping"
 fi
 
-# --- 8. Git-подтверждение ---
+# --- 8. Git staging ---
 cd "$PROJECT_ROOT"
 git add AGENT_RULES.md worklog.md .git/hooks/pre-commit scripts/ tools/ 2>/dev/null || true
-ok "Файлы добавлены в git staging"
+ok "Files added to git staging"
 
-# --- Итог ---
+# --- Summary ---
 echo ""
-echo "=== Установка завершена ==="
+echo "=== Setup complete ==="
 echo ""
-echo "Установлено:"
-echo "  AGENT_RULES.md          -- правила работы агента"
-echo "  worklog.md              -- обязательный лог работы"
-echo "  .git/hooks/pre-commit  -- блокирует коммит без worklog"
-echo "  .git/hooks/pre-push     -- блокирует push мусора в модуль"
-echo "  scripts/check-agent.sh -- мониторинг активности"
-echo "  scripts/audit.sh       -- аудит результатов сессии"
-echo "  scripts/validate.sh    -- проверка чистоты модуля"
+echo "Installed:"
+echo "  AGENT_RULES.md          -- agent work rules"
+echo "  worklog.md              -- mandatory work log"
+echo "  .git/hooks/pre-commit  -- blocks commit without fresh worklog"
+echo "  .git/hooks/pre-push     -- blocks push with foreign files"
+echo "  scripts/check-agent.sh -- activity monitor"
+echo "  scripts/audit.sh       -- post-session audit"
+echo "  scripts/validate.sh    -- module purity checker"
 if command -v bun &>/dev/null && [ -d "$VERIFY_DOCS_DIR" ]; then
-echo "  tools/verify-docs      -- проверка чисел в README (bun)"
-echo "  pre-commit hook        -- + verify-docs (если verify-docs.json есть)"
+echo "  tools/verify-docs      -- README number checker (bun)"
+echo "  pre-commit hook        -- + verify-docs (if verify-docs.json exists)"
 fi
 echo ""
-echo "Промпт для старта агента:"
-echo "  Перед началом работы прочитай /AGENT_RULES.md и /worklog.md."
-echo "  Каждое действие фиксируй в worklog.md."
-echo "  После логического блока -- git commit."
+echo "Agent startup prompt:"
+echo "  Before starting work, read /AGENT_RULES.md and /worklog.md."
+echo "  Record every action in worklog.md."
+echo "  After each logical block -- git commit."
 echo ""
