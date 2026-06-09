@@ -17,9 +17,11 @@ download/
 upload/
 node_modules/
 .next/
-src/
 app/
 public/
-package.json
 package-lock.json
 tsconfig.json
+
+# Bun artifacts in verify-docs
+tools/verify-docs/node_modules/
+bun.lockb
