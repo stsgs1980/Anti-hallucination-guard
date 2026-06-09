@@ -22,6 +22,12 @@ public/
 package-lock.json
 tsconfig.json
 
+# Ignore all skills except our own
+skills/*
+!skills/anti-hallucination-guard/
+!skills/anti-hallucination-guard/**
+!skills/.gitkeep
+
 # Bun artifacts in verify-docs
 tools/verify-docs/node_modules/
 bun.lockb
