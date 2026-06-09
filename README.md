@@ -124,6 +124,39 @@ bash scripts/audit.sh   # work quality score
 git push                 # persist results
 ```
 
+## For maintainers: adding files to the module
+
+When you add a new file to the module, make sure it is allowed by both:
+
+1. **`.gitignore`** -- must NOT be ignored (no matching pattern)
+2. **`scripts/validate.sh`** -- must be in the `ALLOWED` array
+
+The `.gitignore` uses a whitelist-negative pattern for `skills/` to prevent sandbox artifacts from leaking in:
+
+```
+# Ignore everything in skills/ ...
+skills/*
+# ... except our own skill
+!skills/anti-hallucination-guard/
+!skills/anti-hallucination-guard/**
+```
+
+This means `git add -A` is safe to use inside the module -- it will only pick up module files, not hundreds of sandbox skill files that may exist on disk.
+
+**Workflow for adding a new script:**
+
+```bash
+# 1. Create the file
+touch scripts/new-check.sh
+
+# 2. Add it to validate.sh ALLOWED array
+#    "scripts/new-check.sh"
+
+# 3. Verify it is picked up (not ignored)
+git add -A
+git diff --cached --name-only   # should show only your new file
+```
+
 ## Removal
 
 ```bash
