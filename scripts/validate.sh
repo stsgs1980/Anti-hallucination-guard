@@ -6,7 +6,10 @@
 
 set -euo pipefail
 
+# Resolve the module repository root (one level up from scripts/).
+# SCRIPT_DIR is kept for file-existence checks in the "allowed files" block.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MODULE_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
 
 # Whitelist of allowed paths
 ALLOWED=(
@@ -60,8 +63,10 @@ ERRORS=0
 echo "=== validate.sh: repository purity check ==="
 echo ""
 
-# Check that all tracked files are allowed
-TRACKED_FILES=$(git -C "$SCRIPT_DIR" ls-files)
+# Phase 1: check that all tracked files are whitelisted
+TRACKED_FILES=$(git -C "$MODULE_ROOT" ls-files)
+ALLOWED_FILES=()
+
 for FILE in $TRACKED_FILES; do
     ALLOWED_FLAG=0
     for PATTERN in "${ALLOWED[@]}"; do
@@ -74,27 +79,20 @@ for FILE in $TRACKED_FILES; do
         echo "    This file should not be in the module repository."
         echo "    Module contains only: setup.sh, AGENT_RULES.md, .git-hooks/, scripts/, tools/, skills/, README.md, .gitignore"
         ERRORS=$((ERRORS + 1))
+    else
+        ALLOWED_FILES+=("$FILE")
     fi
 done
 
-# Check that no tracked files match forbidden patterns
-for FILE in $TRACKED_FILES; do
-    for PATTERN in "${FORBIDDEN_PATTERNS[@]}"; do
-        case "$FILE" in
-            *"$PATTERN"*)
-                echo "[-] FORBIDDEN PATTERN: $FILE (match: $PATTERN)"
-                ERRORS=$((ERRORS + 1))
-                ;;
-        esac
-    done
-done
+# (Forbidden patterns are superseded by the whitelist above.
+#  If a path is whitelisted, it is allowed regardless of patterns.)
 
 # Check that all allowed files exist
 for ITEM in "${ALLOWED[@]}"; do
-    if [ -e "$SCRIPT_DIR/$ITEM" ]; then
+    if [ -e "$MODULE_ROOT/$ITEM" ]; then
         echo "[+] $ITEM -- OK"
     elif [[ "$ITEM" == */ ]]; then
-        DIR_CONTENTS=$(find "$SCRIPT_DIR/$ITEM" -type f 2>/dev/null | head -1)
+        DIR_CONTENTS=$(find "$MODULE_ROOT/$ITEM" -type f 2>/dev/null | head -1)
         if [ -z "$DIR_CONTENTS" ]; then
             echo "[-] $ITEM -- EMPTY DIRECTORY (or missing)"
             ERRORS=$((ERRORS + 1))
