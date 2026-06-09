@@ -1,0 +1,22 @@
+#!/bin/bash
+# anti-hallucination-guard / pre-push hook
+# Блокирует push, если в репозитории есть посторонние файлы.
+# Устанавливается: cp .git-hooks/pre-push .git/hooks/pre-push && chmod +x
+
+set -euo pipefail
+
+MODULE_DIR="$(git rev-parse --show-toplevel)"
+SCRIPTS_DIR="$MODULE_DIR/scripts"
+VALIDATE="$SCRIPTS_DIR/validate.sh"
+
+if [ ! -f "$VALIDATE" ]; then
+    echo "pre-push: validate.sh не найден -- пропускаю проверку"
+    exit 0
+fi
+
+if ! bash "$VALIDATE"; then
+    echo ""
+    echo "pre-push: PUSH ЗАБЛОКИРОВАН. Репозиторий содержит посторонние файлы."
+    echo ""
+    exit 1
+fi
