@@ -32,11 +32,16 @@ git commit -m "feat: add anti-hallucination-guard"
 
 Updating to latest version:
 ```bash
-cd anti-hallucination-guard && git pull origin main
-cd ..
-bash anti-hallucination-guard/setup.sh
+bash anti-hallucination-guard/update.sh
+# update.sh does: git pull + setup.sh + reminder to commit
+# After update.sh, commit the submodule pointer in your project:
 git add anti-hallucination-guard && git commit -m "update: anti-hallucination-guard"
 ```
+
+> **Why commit the submodule pointer?** A git submodule is just a pointer to a specific commit.
+> When you update the submodule (pull new code), your project still points to the old version
+> until you `git add` + `git commit` the new pointer. Without this step, other developers
+> cloning your project will get the old version of anti-hallucination-guard.
 
 After `git clone` of a project using the guard:
 ```bash
