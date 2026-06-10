@@ -19,6 +19,7 @@
 !LICENSE
 !AGENT_RULES.md
 !setup.sh
+!update.sh
 
 # .git-hooks directory
 !.git-hooks/

@@ -14,6 +14,7 @@ MODULE_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
 # Whitelist of allowed paths
 ALLOWED=(
     "setup.sh"
+    "update.sh"
     "AGENT_RULES.md"
     "README.md"
     ".gitignore"
