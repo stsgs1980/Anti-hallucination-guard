@@ -21,6 +21,7 @@ app/
 public/
 package-lock.json
 tsconfig.json
+src/
 
 # Ignore all skills except our own
 skills/*
@@ -31,3 +32,7 @@ skills/*
 # Bun artifacts in verify-docs
 tools/verify-docs/node_modules/
 bun.lockb
+
+# Never track example runtime artifacts
+*.bak
+*.tmp

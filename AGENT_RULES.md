@@ -1,9 +1,3 @@
-# AGENT RULES -- VIOLATION IS NOT ACCEPTABLE
-
-> Copied to project root by setup.sh. Agent must read before starting work.
-
----
-
 ## Rule 1: worklog -- BEFORE and AFTER every action
 
 - Before ANY action: read /worklog.md
@@ -68,4 +62,4 @@ Stage Summary:
 
 ---
 
-v1.0 | 2026-06-09 | anti-hallucination-guard
+v1.1 | 2026-06-10 | anti-hallucination-guard

@@ -39,6 +39,11 @@ ALLOWED=(
     "tools/verify-docs/templates/verify.yml"
     "tools/verify-docs/templates/install-hooks.ts"
     "tools/verify-docs/examples/"
+    "tools/verify-docs/examples/simple/"
+    "tools/verify-docs/examples/simple/verify-docs.json"
+    "tools/verify-docs/examples/monorepo/"
+    "tools/verify-docs/examples/monorepo/verify-docs.json"
+    "tools/verify-docs/examples/monorepo/verify-docs.plugins.ts"
 )
 
 # Forbidden patterns

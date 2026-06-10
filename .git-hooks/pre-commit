@@ -2,9 +2,15 @@
 # anti-hallucination-guard -- pre-commit hook
 # Blocks commit if worklog.md is not updated.
 # Automatically installed by setup.sh.
+# Other modules (cascade-guard, verify-docs) may append checks after this block.
 
 WORKLOG="worklog.md"
 MAX_AGE=600  # 10 minutes
+
+# Cross-platform stat: Linux uses -c, macOS uses -f
+get_mtime() {
+    stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null
+}
 
 # 1. Check existence
 if [ ! -f "$WORKLOG" ]; then
@@ -16,7 +22,7 @@ if [ ! -f "$WORKLOG" ]; then
 fi
 
 # 2. Check freshness
-LAST_MODIFIED=$(stat -c %Y "$WORKLOG" 2>/dev/null)
+LAST_MODIFIED=$(get_mtime "$WORKLOG")
 NOW=$(date +%s)
 DIFF=$((NOW - LAST_MODIFIED))
 
@@ -50,4 +56,5 @@ if [ "$BLOCK_COUNT" -lt 2 ]; then
 fi
 
 echo "  OK: worklog.md is up to date ($BLOCK_COUNT blocks)"
-exit 0
+# NOTE: Do NOT add 'exit 0' here.
+# Other modules (cascade-guard, verify-docs) append their checks after this block.

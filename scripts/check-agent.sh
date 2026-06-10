@@ -10,6 +10,11 @@ LOG="$PROJECT_ROOT/download/agent-monitor.log"
 
 mkdir -p "$(dirname "$LOG")"
 
+# Cross-platform stat: Linux uses -c, macOS uses -f
+get_mtime() {
+    stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null
+}
+
 timestamp() { date "+%Y-%m-%d %H:%M:%S"; }
 
 # Check 1: worklog exists?
@@ -19,7 +24,7 @@ if [ ! -f "$WORKLOG" ]; then
 fi
 
 # Check 2: worklog fresh?
-LAST=$(stat -c %Y "$WORKLOG" 2>/dev/null)
+LAST=$(get_mtime "$WORKLOG")
 NOW=$(date +%s)
 IDLE=$((NOW - LAST))
 

@@ -11,6 +11,11 @@ MAX_SCORE=100
 
 mkdir -p "$(dirname "$REPORT")"
 
+# Cross-platform stat: Linux uses -c, macOS uses -f
+get_mtime() {
+    stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null
+}
+
 echo "=== SESSION AUDIT ===" > "$REPORT"
 echo "Time: $(date)" >> "$REPORT"
 echo "Project: $PROJECT_ROOT" >> "$REPORT"
@@ -62,7 +67,7 @@ fi
 
 # 6. Last activity
 if [ -f "$WORKLOG" ]; then
-    LAST=$(stat -c %Y "$WORKLOG")
+    LAST=$(get_mtime "$WORKLOG")
     NOW=$(date +%s)
     MIN_AGO=$(( (NOW - LAST) / 60 ))
     echo "[+] Last worklog update: ${MIN_AGO} min ago" >> "$REPORT"
