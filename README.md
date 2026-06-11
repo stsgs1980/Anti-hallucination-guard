@@ -182,7 +182,18 @@ rm -r anti-hallucination-guard/
 
 ```
 anti-hallucination-guard/
-  setup.sh                          -- project installer
+  setup.sh                          -- project installer (thin orchestrator)
+  setup/                            -- modular setup steps
+    _lib.sh                        -- shared variables and logging functions
+    01-deploy-agent-rules.sh       -- AGENT_RULES.md marker merge
+    02-create-worklog.sh           -- worklog.md initialization
+    03-install-pre-commit-hook.sh  -- worklog freshness check
+    04-install-pre-push-hook.sh    -- module purity protection
+    05-deploy-monitoring-scripts.sh -- check-agent, audit, validate
+    06-deploy-skill.sh             -- Z.ai skill definition
+    07-install-verify-docs.sh       -- README checker (optional, needs bun)
+    08-integrate-cascade-guard.sh  -- cascade-state.json freshness
+    09-git-staging.sh              -- git add installed files
   AGENT_RULES.md                    -- agent rules template
   .git-hooks/
     pre-commit                      -- pre-commit hook (worklog + verify-docs)
@@ -191,12 +202,20 @@ anti-hallucination-guard/
     check-agent.sh                  -- activity monitor
     audit.sh                        -- post-session audit
     validate.sh                     -- module purity checker
+    branch-protect.sh                -- branch protection (orchestrator)
+    branch-protect-lib.sh           -- branch protection (config + helpers)
+    check-sandbox.sh                -- Z.ai sandbox verification
   tools/
     verify-docs/                    -- built-in verify-docs
       src/
-        engine.ts                   -- verification engine
-        cli.ts                      -- CLI entry point
-        init.ts                     -- auto config generator
+        types.ts                   -- type definitions
+        resolvers.ts               -- source resolver registry
+        resolve-check.ts           -- single check resolver
+        verify-section1.ts         -- README vs Code verification
+        verify-section2.ts         -- cross-repo consistency
+        engine.ts                  -- verification engine (orchestrator)
+        cli.ts                     -- CLI entry point
+        init.ts                    -- auto config generator
       templates/
         pre-push                    -- hook template for verify-docs
         verify.yml                  -- GitHub Actions workflow
@@ -214,4 +233,4 @@ anti-hallucination-guard/
 
 ---
 
-v1.1 | 2026-06-09 | MIT
+v1.2 | 2026-06-12 | MIT
