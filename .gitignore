@@ -19,6 +19,8 @@
 !LICENSE
 !AGENT_RULES.md
 !setup.sh
+!setup/
+!setup/**
 !update.sh
 
 # .github directory (CI workflows)
