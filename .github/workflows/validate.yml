@@ -1,0 +1,27 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Module purity + fingerprints
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run validate.sh
+        run: bash scripts/validate.sh
+
+      - name: Run branch-protect self-test
+        run: bash scripts/branch-protect.sh --test
+
+      - name: Check shell scripts for syntax errors
+        run: |
+          find . -name '*.sh' -not -path './.git/*' | while read -r f; do
+            bash -n "$f" || { echo "SYNTAX ERROR: $f"; exit 1; }
+          done
+          echo "All .sh files pass syntax check"

@@ -21,6 +21,11 @@
 !setup.sh
 !update.sh
 
+# .github directory (CI workflows)
+!.github/
+!.github/workflows/
+!.github/workflows/*
+
 # .git-hooks directory
 !.git-hooks/
 !.git-hooks/*
