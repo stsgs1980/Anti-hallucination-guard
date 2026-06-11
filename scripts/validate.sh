@@ -25,6 +25,7 @@ ALLOWED=(
     "scripts/check-agent.sh"
     "scripts/audit.sh"
     "scripts/validate.sh"
+    "scripts/branch-protect.sh"
     "skills/"
     "skills/anti-hallucination-guard/"
     "skills/anti-hallucination-guard/SKILL.md"

@@ -1,5 +1,12 @@
 # anti-hallucination-guard
 
+[![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Version 1.1](https://img.shields.io/badge/v1.1-2026--06--09-green.svg)]()
+[![Bash](https://img.shields.io/badge/Shell-Bash-4EAA25.svg?logo=gnu-bash&logoColor=white)]()
+[![TypeScript](https://img.shields.io/badge/TypeScript-verify--docs-3178C6.svg?logo=typescript&logoColor=white)]()
+[![Git Hooks](https://img.shields.io/badge/Git-Hooks-FF6600.svg?logo=git&logoColor=white)]()
+[![Idempotent](https://img.shields.io/badge/Setup-Idempotent-success.svg)]()
+
 Git module for preventing "illusion of activity" by AI agents in Z.ai sandbox environments.
 Includes built-in **verify-docs** -- automatic README vs code consistency checker.
 
