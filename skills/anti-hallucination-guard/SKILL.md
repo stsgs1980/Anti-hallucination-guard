@@ -53,9 +53,9 @@ If a pre-push hook already exists, AHG validation is appended (not overwritten).
 ### Step 5: Install monitoring scripts
 
 Deploy to scripts/:
-- check-agent.sh — activity monitor (cron or manual)
-- audit.sh — post-session audit with score
-- validate.sh — module purity checker
+- check-agent.sh -- activity monitor (cron or manual)
+- audit.sh -- post-session audit with score
+- validate.sh -- module purity checker
 
 ### Step 6: Cascade-guard integration (auto-detect)
 

@@ -119,11 +119,11 @@ check_push() {
             local existing
             existing=$(git -C "$MODULE_ROOT" for-each-ref --format='%(refname:short)' "refs/heads/$branch_name" 2>/dev/null || true)
             if [ -z "$existing" ] && [ "$remote_sha" != "0000000000000000000000000000000000000000" ]; then
-                # New branch push to remote — verify the local sha exists in our history
+                # New branch push to remote -- verify the local sha exists in our history
                 local sha_exists
                 sha_exists=$(git -C "$MODULE_ROOT" cat-file -t "$local_sha" 2>/dev/null || true)
                 if [ -z "$sha_exists" ]; then
-                    fail "Commit $local_sha does not exist locally — foreign push attempt"
+                    fail "Commit $local_sha does not exist locally -- foreign push attempt"
                     errors=$((errors + 1))
                     continue
                 fi
@@ -133,7 +133,7 @@ check_push() {
         # Check 3: Protected files not modified in pushed commits
         if [ "$local_sha" != "0000000000000000000000000000000000000000" ]; then
             if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
-                # New branch — check all commits on this branch vs main
+                # New branch -- check all commits on this branch vs main
                 local base_sha
                 base_sha=$(git -C "$MODULE_ROOT" rev-parse main 2>/dev/null || echo "")
                 if [ -n "$base_sha" ]; then
@@ -300,12 +300,12 @@ HOOKEOF
             if [ -f "$MODULE_ROOT/$ffile" ]; then
                 first_line=$(head -1 "$MODULE_ROOT/$ffile")
                 if [ "$first_line" = "$expected" ]; then
-                    ok "  $ffile — intact"
+                    ok "  $ffile -- intact"
                 else
-                    fail "  $ffile — TAMPERED (expected: '$expected', got: '$first_line')"
+                    fail "  $ffile -- TAMPERED (expected: '$expected', got: '$first_line')"
                 fi
             else
-                warn "  $ffile — not found"
+                warn "  $ffile -- not found"
             fi
         done
 
@@ -316,7 +316,7 @@ HOOKEOF
                 size=$(wc -c < "$MODULE_ROOT/$pf")
                 ok "  $pf ($size bytes)"
             else
-                warn "  $pf — missing"
+                warn "  $pf -- missing"
             fi
         done
         ;;

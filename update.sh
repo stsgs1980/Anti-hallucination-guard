@@ -42,7 +42,7 @@ err()   { echo -e "${RED}[ERROR]${NC} $*"; }
 
 echo ""
 echo "============================================"
-echo "  ANTI-HALLUCINATION-GUARD — Update"
+echo "  ANTI-HALLUCINATION-GUARD -- Update"
 echo "============================================"
 echo ""
 echo "Module dir:   $MODULE_ROOT"
