@@ -46,4 +46,50 @@ fi
 BLOCKS=$(grep -c '^---$' "$WORKLOG" 2>/dev/null)
 echo "[$(timestamp)] Status: worklog=$BLOCKS blocks, idle=$((IDLE/60))min" >> "$LOG"
 
+# --- Sandbox verification checks (Rule 7) ---
+# Only run if we appear to be inside Z.ai Sandbox
+SANDBOX_ROOT="/home/z/my-project"
+
+if [ -d "$SANDBOX_ROOT/.zscripts" ]; then
+    # Check 5: dev server managed by sandbox (not manual next dev)
+    if pgrep -f ".zscripts/dev.sh" >/dev/null 2>&1; then
+        echo "[$(timestamp)] SANDBOX OK: dev server via .zscripts/dev.sh" >> "$LOG"
+    else
+        echo "[$(timestamp)] SANDBOX ALERT: .zscripts/dev.sh not running!" >> "$LOG"
+        echo "[$(timestamp)]   -> Agent may have started server manually or not at all" >> "$LOG"
+    fi
+
+    # Check 6: code served from correct location (root, not subfolder)
+    if [ -f "$SANDBOX_ROOT/src/app/page.tsx" ]; then
+        echo "[$(timestamp)] SANDBOX OK: code in /home/z/my-project/ root" >> "$LOG"
+    else
+        echo "[$(timestamp)] SANDBOX ALERT: src/app/page.tsx NOT in sandbox root!" >> "$LOG"
+        echo "[$(timestamp)]   -> Agent may be editing in /tmp/ or wrong subfolder" >> "$LOG"
+    fi
+
+    # Check 7: dev server actually returns 200
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/ 2>/dev/null || echo "000")
+    if [ "$HTTP_CODE" = "200" ]; then
+        echo "[$(timestamp)] SANDBOX OK: dev server returns 200" >> "$LOG"
+    else
+        echo "[$(timestamp)] SANDBOX ALERT: dev server returns HTTP $HTTP_CODE (expected 200)" >> "$LOG"
+        echo "[$(timestamp)]   -> HMR 500 or server down; code may be broken" >> "$LOG"
+    fi
+
+    # Check 8: dev.log contains real 200 responses (not just 500 errors)
+    DEV_LOG="$SANDBOX_ROOT/dev.log"
+    if [ -f "$DEV_LOG" ]; then
+        LOG_200=$(grep -c 'GET / 200' "$DEV_LOG" 2>/dev/null || true)
+        LOG_500=$(grep -c 'GET / 500' "$DEV_LOG" 2>/dev/null || true)
+        LOG_200=$(echo "$LOG_200" | tr -d '[:space:]' | grep -o '[0-9]*' | head -1)
+        LOG_500=$(echo "$LOG_500" | tr -d '[:space:]' | grep -o '[0-9]*' | head -1)
+        LOG_200=${LOG_200:-0}
+        LOG_500=${LOG_500:-0}
+        echo "[$(timestamp)] SANDBOX: dev.log has $LOG_200 x GET / 200, $LOG_500 x GET / 500" >> "$LOG"
+        if [ "$LOG_500" -gt "$LOG_200" ]; then
+            echo "[$(timestamp)] SANDBOX ALERT: more 500s than 200s in dev.log!" >> "$LOG"
+        fi
+    fi
+fi
+
 exit 0

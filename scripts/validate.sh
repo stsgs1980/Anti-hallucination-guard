@@ -29,6 +29,7 @@ ALLOWED=(
     "scripts/audit.sh"
     "scripts/validate.sh"
     "scripts/branch-protect.sh"
+    "scripts/check-sandbox.sh"
     "skills/"
     "skills/anti-hallucination-guard/"
     "skills/anti-hallucination-guard/SKILL.md"
