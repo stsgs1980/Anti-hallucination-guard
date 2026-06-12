@@ -11,14 +11,31 @@ if [ -f "$HOOK_DIR/pre-push" ]; then
         # Append our validate check to the existing pre-push hook
         cat >> "$HOOK_DIR/pre-push" << 'PUSH_APPEND'
 
-# ---- anti-hallucination-guard: validate module purity ----
-AHG_VALIDATE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-if [ -f "$AHG_VALIDATE_DIR/scripts/validate.sh" ]; then
-    if ! bash "$AHG_VALIDATE_DIR/scripts/validate.sh"; then
-        echo ""
-        echo "  pre-push: PUSH BLOCKED. AHG found foreign files."
-        echo ""
-        exit 1
+# ---- anti-hallucination-guard: push validation ----
+# In AHG module repo: runs validate.sh (purity check).
+# In target project: runs ahg.sh verify (doc consistency).
+AHG_MODULE_DIR="$(git rev-parse --show-toplevel)"
+if [ -f "$AHG_MODULE_DIR/setup.sh" ] && [ -f "$AHG_MODULE_DIR/.git-hooks/pre-commit" ]; then
+    AHG_VALIDATE_DIR="$AHG_MODULE_DIR"
+    if [ -f "$AHG_VALIDATE_DIR/scripts/validate.sh" ]; then
+        if ! bash "$AHG_VALIDATE_DIR/scripts/validate.sh"; then
+            echo ""
+            echo "  pre-push: PUSH BLOCKED. AHG found foreign files."
+            echo ""
+            exit 1
+        fi
+    fi
+else
+    AHG_SH="$AHG_MODULE_DIR/scripts/ahg.sh"
+    if [ -f "$AHG_SH" ] && command -v bun &>/dev/null; then
+        echo "  pre-push: Running AHG verify..."
+        if ! bash "$AHG_SH" verify --ci 2>&1; then
+            echo ""
+            echo "  pre-push: PUSH BLOCKED. Doc consistency check failed."
+            echo ""
+            exit 1
+        fi
+        echo "  pre-push: AHG verify passed."
     fi
 fi
 PUSH_APPEND

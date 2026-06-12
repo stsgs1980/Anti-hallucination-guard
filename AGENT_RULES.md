@@ -115,6 +115,92 @@ This rule is non-negotiable and applies regardless of task urgency.
 - audit.sh scores integrity as part of session quality
 - CI pipeline runs verify-docs independently (cannot be bypassed locally)
 
+## Rule 11: Anti-monolith (no file over 250 lines)
+
+Every file MUST stay under 250 lines. When a file crosses this threshold,
+the agent MUST stop writing, split the file, and continue with smaller modules.
+
+**Thresholds:**
+- File: 250 lines hard limit (150 recommended)
+- Function: 50 lines max (longer = extract helper)
+- One file = one responsibility
+
+**Auto-activation (MUST NOT wait to be asked):**
+1. Agent writes a file that approaches 250 lines -> STOP, split, continue
+2. Agent opens a file that already exceeds 250 lines -> split before editing
+3. Agent plans a new file that will clearly exceed limits -> plan decomposition upfront
+
+**When threshold is crossed:**
+1. STOP writing immediately
+2. Announce: `[ANTI-MONOLITH] Threshold exceeded: <file> is N lines (limit 250)`
+3. Identify sub-responsibilities within the file
+4. Extract each into a separate file with a clear single purpose
+5. Keep original as thin orchestrator that imports extracted modules
+6. Continue the task with decomposed structure
+
+**Valid exceptions (must be documented with comment in file):**
+- Auto-generated code (Prisma schema, OpenAPI types)
+- Configuration files that are naturally flat
+- Files between 250-300 lines AND well-organized with clear sections
+
+**Invalid exceptions:**
+- File exceeds 400 lines (no excuses, decompose)
+- "I'll refactor later" (later never comes)
+- "It's easier to read in one file" (that's what imports are for)
+
+## Rule 12: Use ahg bump for version updates
+
+When changing the project version, use the atomic bump command:
+  bash scripts/ahg.sh bump X.Y.Z
+
+This command:
+- Auto-discovers ALL files containing version numbers
+- Updates them atomically (no file forgotten)
+- Adds CHANGELOG entry if CHANGELOG exists
+- Supports --dry-run for preview
+
+Do NOT update versions manually in individual files.
+Manual updates cause version drift -- one file gets updated,
+another is forgotten. ahg bump eliminates this class of errors.
+
+## Rule 13: Pre-commit mandatory checklist
+
+Before EVERY commit, verify ALL of these items:
+- [ ] Code written and tested
+- [ ] worklog.md updated (hook will verify freshness)
+- [ ] If version changed: ahg bump used (not manual edit)
+- [ ] If new files added: documented in README/ARCHITECTURE
+- [ ] If files deleted: no stale references remain
+- [ ] cascade-state.json: task statuses current (auto-sync in hook)
+- [ ] verify-docs passes (or discover shows no errors)
+
+If ANY item is unclear: run "bash scripts/ahg.sh discover" first.
+Do NOT commit with known documentation drift.
+
+## Rule 14: No Unicode graphics (UNICODE_POLICY compliance)
+
+All AHG output must comply with No-Unicode Policy v2.1.
+No emoji, no Unicode pictograms, no decorative symbols.
+
+**Allowed:**
+- ASCII: a-z, A-Z, 0-9, standard punctuation
+- Cyrillic: a-ya, A-Ya
+- Status markers: [OK], [ERR], [WARN], [INFO], [FAIL] -- plain text only
+- Diagrams: ASCII only: -> <- => <= | + - v ^ >
+- Section dividers in comments: // -- or # -- (not Unicode dashes)
+
+**Prohibited:**
+- Emoji (any pictograms: emotions, objects, UI-symbols)
+- Unicode box drawing (U+2500 and similar)
+- Em dash (U+2014), en dash (U+2013) -- use -- instead
+- Any Unicode decorative symbols
+
+**Application levels:**
+- Production code: [C] Critical (blocks)
+- CLI output, scripts: [W] Warning
+- AI-agent chat responses: [W] Warning
+- Documentation (.md): regulated by MARKDOWN_STANDARD v2.1
+
 ---
 
 ## worklog.md format
@@ -137,4 +223,4 @@ Stage Summary:
 
 ---
 
-v1.4 | 2026-06-12 | anti-hallucination-guard
+v2.0.0 | 2026-06-13 | anti-hallucination-guard

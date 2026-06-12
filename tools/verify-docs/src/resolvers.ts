@@ -7,11 +7,11 @@ import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
 import type { SourceResolver } from "./types.js";
 
-// ── Resolver registry ──────────────────────────────────────────────────────
+// -- Resolver registry -------------------------------------------------------
 
 const resolvers: Map<string, SourceResolver> = new Map();
 
-// ── Built-in source resolvers ──────────────────────────────────────────────
+// -- Built-in source resolvers -----------------------------------------------
 
 resolvers.set("git:HEAD", (_source: string, root: string) => {
   try {
@@ -66,7 +66,7 @@ export function getResolvers(): Map<string, SourceResolver> {
   return resolvers;
 }
 
-// ── File system helpers ───────────────────────────────────────────────────
+// -- File system helpers -----------------------------------------------------
 
 /** Recursively find files matching a regex pattern */
 export function findFiles(dir: string, pattern: RegExp, root: string): string[] {
@@ -75,7 +75,7 @@ export function findFiles(dir: string, pattern: RegExp, root: string): string[] 
   try {
     const entries = readdirSync(fullDir, { withFileTypes: true });
     for (const entry of entries) {
-      if (["node_modules", ".next", "dist", ".git", ".turbo", "build", "out"].includes(entry.name)) continue;
+      if (["node_modules", ".next", "dist", ".git", ".turbo", "build", "out", "anti-hallucination-guard"].includes(entry.name)) continue;
       const relPath = dir ? `${dir}/${entry.name}` : entry.name;
       if (entry.isDirectory()) {
         results.push(...findFiles(relPath, pattern, root));

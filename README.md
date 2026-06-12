@@ -1,14 +1,15 @@
 # anti-hallucination-guard
 
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version 1.4](https://img.shields.io/badge/v1.4-2026--06--12-green.svg)]()
+[![Version 2.0.0](https://img.shields.io/badge/v2.0.0-2026--06--13-green.svg)]()
 [![Bash](https://img.shields.io/badge/Shell-Bash-4EAA25.svg?logo=gnu-bash&logoColor=white)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-verify--docs-3178C6.svg?logo=typescript&logoColor=white)]()
 [![Git Hooks](https://img.shields.io/badge/Git-Hooks-FF6600.svg?logo=git&logoColor=white)]()
 [![Idempotent](https://img.shields.io/badge/Setup-Idempotent-success.svg)]()
 
 Git module for preventing "illusion of activity" by AI agents in Z.ai sandbox environments.
-Includes built-in **verify-docs** -- 5-section automatic documentation consistency checker.
+Includes built-in **verify-docs** -- 5-section automatic documentation consistency checker
+with **auto-discover** (no config required), **atomic version bump**, and **baseline tracking**.
 
 ## What it does
 
@@ -20,14 +21,13 @@ Physically enforces that the agent:
 - Reports results honestly
 - Scans project structure at session start (drift prevention)
 - Keeps documentation in sync with code
+- Never disables or bypasses anti-hallucination mechanisms
+- Keeps files under 250 lines (anti-monolith)
 
-Plus automatic documentation verification:
-- Numbers in README are cross-checked with actual code
-- Version numbers are synced across all docs (single source of truth)
-- Stub markers in docs are verified against existing code
-- Documentation coverage is checked (new modules must be documented)
-- Push is blocked on mismatch
-- Supports cross-repo consistency checks
+Plus automatic documentation verification (three modes):
+- **DISCOVER**: auto-scan project without config (finds versions, CHANGELOG, coverage gaps)
+- **VERIFY**: cross-check docs against config (5 sections)
+- **GENERATE**: atomic version bump + CHANGELOG entry via `ahg bump`
 
 ## Installation
 
@@ -50,11 +50,6 @@ bash anti-hallucination-guard/update.sh
 git add anti-hallucination-guard && git commit -m "update: anti-hallucination-guard"
 ```
 
-> **Why commit the submodule pointer?** A git submodule is just a pointer to a specific commit.
-> When you update the submodule (pull new code), your project still points to the old version
-> until you `git add` + `git commit` the new pointer. Without this step, other developers
-> cloning your project will get the old version of anti-hallucination-guard.
-
 After `git clone` of a project using the guard:
 ```bash
 git submodule update --init --recursive
@@ -73,16 +68,85 @@ bash anti-hallucination-guard/setup.sh
 
 | File | Purpose |
 |---|---|
-| `AGENT_RULES.md` | Agent work rules with 9 rules (copied to project root) |
+| `AGENT_RULES.md` | Agent work rules (14 rules, copied to project root) |
 | `worklog.md` | Mandatory work log (copied to project root) |
-| `.git/hooks/pre-commit` | Blocks commit without updated worklog + verify-docs |
+| `.git/hooks/pre-commit` | Blocks commit without updated worklog + verify-docs + auto-discover fallback |
 | `.git/hooks/pre-push` | Blocks push with foreign files |
+| `scripts/ahg.sh` | Unified CLI for all AHG commands |
 | `scripts/check-agent.sh` | Activity monitor (cron or manual) |
 | `scripts/audit.sh` | Post-session audit with score |
-| `scripts/validate.sh` | Module purity checker |
+| `scripts/validate.sh` | Module purity checker + Unicode policy enforcement |
 | `scripts/sync-task-state.sh` | Auto-sync task statuses based on implementation files |
-| `scripts/check-hooks-integrity.sh` | Detect hook tampering / bypass attempts |
-| `tools/verify-docs/` | 5-section doc consistency checker (requires bun) |
+| `scripts/check-hooks-snapshot.sh` | Create integrity snapshot of hooks/configs |
+| `scripts/check-hooks-verify.sh` | Verify hooks/configs against snapshot (anti-tampering) |
+| `tools/verify-docs/` | 5-section doc consistency checker with auto-discover (requires bun) |
+
+## Unified CLI: ahg.sh
+
+All AHG commands are accessible through a single entry point:
+
+```bash
+bash scripts/ahg.sh <command> [args]
+```
+
+| Command | Description |
+|---------|-------------|
+| `verify [--ci]` | Verify docs against config |
+| `discover` | Auto-scan project (no config needed) |
+| `bump <version>` | Update version in all files atomically |
+| `bump <version> --dry-run` | Preview bump without writing |
+| `init` | Generate verify-docs.json from discover |
+| `baseline` | Create .ahg-baseline.json |
+| `baseline --check` | Check current files vs baseline |
+| `snapshot` | Manage hook integrity snapshots |
+| `integrity [--repair]` | Check or repair hook integrity |
+| `sync [--dry-run]` | Auto-sync task statuses |
+| `audit` | Post-session audit |
+| `validate` | Repository purity + Unicode policy check |
+
+The CLI wrapper fixes CWD issues by always `cd`ing to the project root before executing any command. This makes it safe to call from any directory.
+
+## Three-mode architecture: DISCOVER / GENERATE / VERIFY
+
+AHG v2.0 operates in three modes, solving the root cause of documentation drift
+(where v1.0 was reactive-only and "0 errors" actually meant "0 checks"):
+
+### DISCOVER mode (proactive -- no config required)
+
+Auto-scans the project and reports issues without needing verify-docs.json:
+- Finds all files containing version numbers and checks if they are in sync
+- Finds CHANGELOG files and verifies freshness (latest entry matches current version)
+- Scans source directories for code files not mentioned in documentation
+- Compares current file list against baseline (detects deleted files)
+
+```bash
+bash scripts/ahg.sh discover
+```
+
+Runs automatically as a fallback in the pre-commit hook when verify-docs.json does not exist.
+
+### GENERATE mode (atomic changes)
+
+Updates versions and generates configuration atomically:
+- `ahg bump X.Y.Z` -- updates version in ALL discovered files at once
+- `ahg init` -- generates verify-docs.json from auto-discover results
+- `ahg baseline` -- creates .ahg-baseline.json for deletion tracking
+
+```bash
+bash scripts/ahg.sh bump 2.1.0          # update all version files + CHANGELOG
+bash scripts/ahg.sh bump 2.1.0 --dry-run  # preview without writing
+bash scripts/ahg.sh init                  # generate verify-docs.json
+bash scripts/ahg.sh baseline              # create file baseline
+```
+
+### VERIFY mode (existing checks)
+
+Cross-checks documentation against the codebase using verify-docs.json config:
+
+```bash
+bash scripts/ahg.sh verify              # full verification
+bash scripts/ahg.sh verify --ci         # CI mode (skip cross-repo)
+```
 
 ## verify-docs (built-in) -- 5 Sections
 
@@ -140,6 +204,8 @@ of truth and list targets that must match:
 }
 ```
 
+Or use `ahg bump` to update ALL version files atomically without manual config.
+
 ### Section 4: Feature Status (Stub Detection)
 
 Detects features documented as "stubs / not implemented / TODO"
@@ -182,16 +248,15 @@ is mentioned in a documentation file:
 ]
 ```
 
-### Running verify-docs
+## Baseline tracking (.ahg-baseline.json)
 
-Create `verify-docs.json` in your project root and run:
-```bash
-bun run tools/verify-docs/src/cli.ts
-```
+Records which files exist at the time of setup. On subsequent runs,
+deleted files are detected by comparing current state against the baseline.
+This prevents the "silent deletion" problem where files disappear unnoticed.
 
-Or auto-generate a config:
 ```bash
-bun run tools/verify-docs/src/init.ts
+bash scripts/ahg.sh baseline           # create baseline
+bash scripts/ahg.sh baseline --check   # check for deleted files
 ```
 
 ## sync-task-state.sh
@@ -203,10 +268,12 @@ Each task should have an `implementationFiles` array listing files that
 prove the task is implemented. If ALL files exist, the task status is
 automatically changed from "pending" to "implemented".
 
+Integrated into the pre-commit hook (Phase 2.5): runs automatically
+before every commit when cascade-state.json exists.
+
 ```bash
-bash scripts/sync-task-state.sh                  # default: cascade-state.json
-bash scripts/sync-task-state.sh my-state.json    # custom file
-bash scripts/sync-task-state.sh --dry-run        # preview without writing
+bash scripts/ahg.sh sync               # default: cascade-state.json
+bash scripts/ahg.sh sync --dry-run     # preview without writing
 ```
 
 Example task structure in state file:
@@ -219,7 +286,7 @@ Example task structure in state file:
 }
 ```
 
-## AGENT_RULES.md (9 Rules)
+## AGENT_RULES.md (14 Rules)
 
 | Rule | Purpose |
 |------|---------|
@@ -233,6 +300,10 @@ Example task structure in state file:
 | Rule 8 | **Session Start Protocol** (drift prevention) |
 | Rule 9 | **Documentation sync** (no code without docs) |
 | Rule 10 | **Integrity protection** (no self-sabotage) |
+| Rule 11 | **Anti-monolith** (no file over 250 lines) |
+| Rule 12 | **ahg bump** (atomic version updates, no manual edits) |
+| Rule 13 | **Pre-commit checklist** (mandatory before every commit) |
+| Rule 14 | **UNICODE_POLICY** (ASCII-only output, no emoji, no Unicode graphics) |
 
 ### Rule 8: Session Start Protocol
 
@@ -242,14 +313,6 @@ Before ANY work in a new session, the agent must:
 3. Compare actual structure with documentation
 4. If drift > 3 items: UPDATE DOCUMENTATION FIRST, then do the task
 5. Record scan results in worklog.md
-
-### Rule 9: Documentation Sync
-
-When changing the codebase:
-1. New file -> add to ARCHITECTURE.md + update file counts
-2. New functionality -> remove from "stubs" section
-3. Deleted/renamed file -> update all references
-4. Version change -> update ONLY the source of truth
 
 ### Rule 10: Integrity Protection
 
@@ -261,23 +324,55 @@ Agents MUST NOT disable, bypass, or weaken the anti-hallucination mechanisms:
 - Removing rules from AGENT_RULES.md is forbidden
 - Removing checks from verify-docs.json to avoid failures is forbidden
 
-Detection: `check-hooks-integrity.sh` fingerprints hooks and configs.
+Detection: `check-hooks-verify.sh` fingerprints hooks and configs.
 CI pipeline runs verify-docs independently (cannot be bypassed locally).
 
-## check-hooks-integrity.sh
+### Rule 11: Anti-monolith
+
+Every file MUST stay under 250 lines. When a file crosses this threshold,
+the agent MUST stop writing, split the file, and continue with smaller modules.
+Functions must stay under 50 lines. Auto-activation: do not wait to be asked.
+
+### Rule 12: ahg bump
+
+When changing the project version, use `bash scripts/ahg.sh bump X.Y.Z` instead
+of manual edits. This command auto-discovers ALL files containing version numbers
+and updates them atomically. Manual updates cause version drift.
+
+### Rule 14: UNICODE_POLICY
+
+All AHG output must comply with No-Unicode Policy v2.1. No emoji, no Unicode
+pictograms, no box-drawing characters. Status markers: [OK], [ERR], [WARN], [INFO].
+Section dividers in comments: `// --` or `# --` (not Unicode dashes).
+
+## check-hooks integrity system
 
 Detects tampering with git hooks and key configuration files.
-Uses SHA256 fingerprints to verify that hooks have not been replaced
-or modified by an AI agent trying to bypass safeguards.
+Split into two scripts for anti-monolith compliance:
 
 ```bash
-bash scripts/check-hooks-integrity.sh --snapshot  # save fingerprints
-bash scripts/check-hooks-integrity.sh --check     # verify integrity
-bash scripts/check-hooks-integrity.sh --repair    # re-install from module
+bash scripts/ahg.sh snapshot              # create integrity snapshot
+bash scripts/ahg.sh integrity             # verify against snapshot
+bash scripts/ahg.sh integrity --repair    # re-install from module
 ```
 
+- `check-hooks-snapshot.sh` -- creates SHA256 fingerprints of hooks, AGENT_RULES.md, verify-docs.json
+- `check-hooks-verify.sh` -- compares current state against snapshot, detects tampering, offers repair
+
 Automatically creates a snapshot during `setup.sh` and after hook installation.
-The pre-commit hook also runs a quick self-check.
+The pre-commit hook also runs a quick self-check (detects core.hooksPath bypass).
+
+## Pre-commit hook phases
+
+The pre-commit hook runs in multiple phases:
+
+| Phase | Check | Blocking |
+|-------|-------|----------|
+| 1 | Integrity check (core.hooksPath, self-check) | Yes |
+| 2 | Worklog checks (exists, fresh <10min, >50 bytes, >2 blocks) | Yes |
+| 2.5 | sync-task-state (cascade-state auto-sync) | No (warn) |
+| 3 | verify-docs (if verify-docs.json exists) | Yes |
+| 3.5 | auto-discover fallback (if no config) | Yes |
 
 ## Usage
 
@@ -295,13 +390,14 @@ Before starting work, read /AGENT_RULES.md and /worklog.md.
 - After a logical block -> git commit (blocked without worklog)
 - On 3rd failed attempt -> STOP, write in chat
 - New code without doc update -> Rule 9 violation
+- Version change -> use `ahg bump` (Rule 12)
 
 ### After session ends
 
 ```bash
-bash scripts/audit.sh              # work quality score
-bash scripts/sync-task-state.sh    # auto-update task statuses
-git push                            # persist results
+bash scripts/ahg.sh audit              # work quality score
+bash scripts/ahg.sh sync               # auto-update task statuses
+git push                                # persist results
 ```
 
 ## For maintainers: adding files to the module
@@ -340,7 +436,7 @@ git diff --cached --name-only   # should show only your new file
 ## Removal
 
 ```bash
-rm AGENT_RULES.md worklog.md verify-docs.json
+rm AGENT_RULES.md worklog.md verify-docs.json .ahg-baseline.json
 rm .git/hooks/pre-commit .git/hooks/pre-push
 rm -r scripts/ tools/verify-docs/
 rm -r anti-hallucination-guard/
@@ -351,31 +447,35 @@ rm -r anti-hallucination-guard/
 ```
 anti-hallucination-guard/
   setup.sh                          -- project installer (thin orchestrator)
+  update.sh                         -- pull + reinstall + commit reminder
   setup/                            -- modular setup steps
     _lib.sh                        -- shared variables and logging functions
     01-deploy-agent-rules.sh       -- AGENT_RULES.md marker merge
     02-create-worklog.sh           -- worklog.md initialization
-    03-install-pre-commit-hook.sh  -- worklog freshness check
+    03-install-pre-commit-hook.sh  -- worklog + verify-docs + discover
     04-install-pre-push-hook.sh    -- module purity protection
-    05-deploy-monitoring-scripts.sh -- check-agent, audit, validate, sync-task-state
+    05-deploy-monitoring-scripts.sh -- check-agent, audit, validate, sync, ahg
     06-deploy-skill.sh             -- Z.ai skill definition
     07-install-verify-docs.sh       -- README checker (optional, needs bun)
     08-integrate-cascade-guard.sh  -- cascade-state.json freshness
     09-git-staging.sh              -- git add installed files
-  AGENT_RULES.md                    -- agent rules template (9 rules)
+  AGENT_RULES.md                    -- agent rules template (14 rules)
   .git-hooks/
-    pre-commit                      -- pre-commit hook (worklog + verify-docs)
+    pre-commit                      -- pre-commit hook (5 phases)
     pre-push                        -- pre-push hook (foreign file protection)
   scripts/
+    ahg.sh                          -- unified CLI entry point
     check-agent.sh                  -- activity monitor
     audit.sh                        -- post-session audit
-    validate.sh                     -- module purity checker
-    branch-protect.sh                -- branch protection (orchestrator)
+    validate.sh                     -- module purity + Unicode policy checker
+    branch-protect.sh               -- branch protection (orchestrator)
     branch-protect-lib.sh           -- branch protection (config + helpers)
     sync-task-state.sh              -- auto-sync task statuses
-    check-hooks-integrity.sh        -- detect hook tampering / bypass
+    check-hooks-lib.sh              -- shared functions for integrity checks
+    check-hooks-snapshot.sh         -- create integrity snapshot
+    check-hooks-verify.sh           -- verify against snapshot (anti-tampering)
   tools/
-    verify-docs/                    -- built-in verify-docs (5 sections)
+    verify-docs/                    -- built-in verify-docs (5 sections + discover + bump)
       src/
         types.ts                   -- type definitions
         resolvers.ts               -- source resolver registry
@@ -386,15 +486,21 @@ anti-hallucination-guard/
         verify-section4.ts         -- feature status (stub detection)
         verify-section5.ts         -- documentation coverage
         engine.ts                  -- verification engine (orchestrator)
-        cli.ts                     -- CLI entry point
-        init.ts                    -- auto config generator
+        cli.ts                     -- CLI entry point (5 modes)
+        init.ts                    -- quick config generator
+        discover.ts                -- auto-discover orchestrator
+        discover-versions.ts       -- find version files automatically
+        discover-changelog.ts      -- find and verify CHANGELOG freshness
+        discover-coverage.ts       -- find doc coverage gaps
+        discover-baseline.ts       -- create/check file baselines
+        bump.ts                    -- atomic version bump
       templates/
-        pre-push                    -- hook template for verify-docs
-        verify.yml                  -- GitHub Actions workflow
-        install-hooks.ts            -- hook installer
+        pre-push                   -- hook template for verify-docs
+        verify.yml                 -- GitHub Actions workflow
+        install-hooks.ts           -- hook installer
       examples/
-        simple/                     -- basic config
-        monorepo/                   -- config with plugins and cross-repo
+        simple/                    -- basic config
+        monorepo/                  -- config with plugins and cross-repo
       package.json
   skills/
     anti-hallucination-guard/
@@ -405,4 +511,4 @@ anti-hallucination-guard/
 
 ---
 
-v1.4 | 2026-06-12 | MIT
+v2.0.0 | 2026-06-13 | MIT

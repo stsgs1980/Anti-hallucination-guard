@@ -12,9 +12,9 @@
 // Custom source types: register via registerSource() from resolvers.ts.
 // ============================================================================
 
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { join } from "path";
-import type { VerifyConfig, VerifyResult } from "./types.js";
+import type { VerifyConfig, VerifyResult, LineResult } from "./types.js";
 import { registerSource } from "./resolvers.js";
 import { resolveCheck } from "./resolve-check.js";
 import { verifySection1 } from "./verify-section1.js";
@@ -41,7 +41,25 @@ export function verify(
   options?: { ci?: boolean }
 ): VerifyResult {
   const ci = options?.ci ?? false;
-  const readmeContent = readFileSync(join(root, config.readme), "utf-8");
+
+  // Graceful handling: if README.md doesn't exist, report error instead of crash
+  const readmePath = join(root, config.readme);
+  if (!existsSync(readmePath)) {
+    const emptyResult: LineResult[] = [
+      { status: "ERR", name: config.readme, detail: "File not found -- cannot verify docs without it" },
+    ];
+    return {
+      passed: false,
+      errors: 1,
+      section1: emptyResult,
+      section2: [],
+      section3: [],
+      section4: [],
+      section5: [],
+    };
+  }
+
+  const readmeContent = readFileSync(readmePath, "utf-8");
 
   // Section 1: README vs Code
   const { results: section1, errors: s1Errors } = verifySection1(config.checks, root, readmeContent);
