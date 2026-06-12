@@ -16,6 +16,8 @@
 # Then, un-ignore our module files
 !.gitignore
 !README.md
+!CHANGELOG.md
+!registry.json
 !LICENSE
 !AGENT_RULES.md
 !setup.sh

@@ -133,7 +133,101 @@ else
     warn "setup.sh not found at $MODULE_ROOT/setup.sh"
 fi
 
-# ---- 4. Remind to commit the submodule update ----
+# ---- 4. Generate cascade-state.json ----
+cd "$MODULE_ROOT"
+
+CASCADE_FILE="$PROJECT_ROOT/cascade-state.json"
+REGISTRY_FILE="$MODULE_ROOT/registry.json"
+PREV_HASH="$LOCAL_HASH"
+CURR_HASH=$(git rev-parse HEAD)
+
+# Read current AHG version from registry or README
+AHG_VERSION="unknown"
+if [ -f "$REGISTRY_FILE" ]; then
+    AHG_VERSION=$(grep '"version"' "$REGISTRY_FILE" | head -1 | sed 's/.*: *"//;s/".*//')
+fi
+
+# Read previous cascade-state if exists (for delta)
+PREV_VERSION=""
+if [ -f "$CASCADE_FILE" ]; then
+    PREV_VERSION=$(grep '"ahgVersion"' "$CASCADE_FILE" | head -1 | sed 's/.*: *"//;s/".*//' 2>/dev/null || echo "")
+fi
+
+# Build changed items list from git diff
+CHANGED_ITEMS=""
+if [ -f "$REGISTRY_FILE" ] && [ "$PREV_HASH" != "$CURR_HASH" ]; then
+    CHANGED_FILES_LIST=$(git diff --name-only "$PREV_HASH" "$CURR_HASH" 2>/dev/null || echo "")
+    CHANGED_ITEMS=$(echo "$CHANGED_FILES_LIST" | tr '\n' ' ')
+fi
+
+# Generate cascade-state.json
+info "Generating cascade-state.json in project root..."
+cat > "$CASCADE_FILE" << CASCEOF
+{
+  "ahgVersion": "$AHG_VERSION",
+  "previousVersion": "${PREV_VERSION:-none}",
+  "previousCommit": "$PREV_HASH",
+  "currentCommit": "$CURR_HASH",
+  "updatedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "changedFiles": "$CHANGED_ITEMS",
+  "items": [
+CASCEOF
+
+# Add items from registry.json if available
+if [ -f "$REGISTRY_FILE" ] && command -v python3 &>/dev/null; then
+    python3 -c "
+import json, sys
+with open('$REGISTRY_FILE') as f:
+    reg = json.load(f)
+items = reg.get('items', {})
+first = True
+for iid, entry in items.items():
+    if not first:
+        print(',')
+    first = False
+    print(f'    {{\"id\": \"{iid}\", \"version\": \"{entry.get(\"version\",\"?\")}\", \"level\": \"{entry.get(\"level\",\"?\")}\", \"status\": \"active\"}}', end='')
+print()
+" >> "$CASCADE_FILE" 2>/dev/null || warn "python3 not available -- items section will be empty"
+fi
+
+# Close JSON
+cat >> "$CASCADE_FILE" << CASCEOF
+  ],
+  "changedSinceLastUpdate": [
+CASCEOF
+
+# Add delta for changed items
+if [ -n "$PREV_VERSION" ] && [ "$PREV_VERSION" != "$AHG_VERSION" ] && [ -f "$REGISTRY_FILE" ] && command -v python3 &>/dev/null; then
+    python3 -c "
+import json
+with open('$REGISTRY_FILE') as f:
+    reg = json.load(f)
+items = reg.get('items', {})
+first = True
+for iid, entry in items.items():
+    if not first:
+        print(',')
+    first = False
+    breaking = entry.get('level') == 'critical'
+    print(f'    {{\"id\": \"{iid}\", \"from\": \"{PREV_VERSION}\", \"to\": \"{entry.get(\"version\",\"?\")}\", \"breaking\": {str(breaking).lower()}}}', end='')
+print()
+" >> "$CASCADE_FILE" 2>/dev/null
+fi
+
+cat >> "$CASCADE_FILE" << CASCEOF
+  ]
+}
+CASCEOF
+
+ok "cascade-state.json generated at $CASCADE_FILE"
+
+if [ "$PREV_VERSION" != "" ] && [ "$PREV_VERSION" != "$AHG_VERSION" ]; then
+    echo ""
+    warn "Version changed: $PREV_VERSION -> $AHG_VERSION"
+    echo "  Check cascade-state.json for changed items and breaking changes."
+fi
+
+# ---- 5. Remind to commit the submodule update ----
 echo ""
 echo "============================================"
 echo "  Update Complete!"
