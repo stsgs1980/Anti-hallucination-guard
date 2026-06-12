@@ -124,13 +124,12 @@ if (doDiscover) {
 
 // -- MODE: INIT --------------------------------------------------------------
 if (doInit) {
-  // Redirect to init.ts
+  // Build a FULL config from auto-discover results, not a half-empty template
   console.log("Generating verify-docs.json from auto-discover...\n");
   const result = discover(root);
 
-  // Build config from discover results
+  // -- Version sync ----------------------------------------------------------
   const versionInfo = result.versionInfo;
-  // Generate a proper extractPattern regex for the source of truth
   const sotFile = versionInfo.sourceOfTruth?.file || "";
   const sotExt = sotFile.split(".").pop() || "";
   const extractPattern = sotExt === "json"
@@ -139,33 +138,103 @@ if (doInit) {
     ? "v([\\d.]+)"
     : "version[=:\\s]+[\"']?([\\d.]+)[\"']?";
   const targetPattern = (ext: string) =>
-    ext === "md" ? "v([\\d.]+)" : '"version"\\s*:\\s*"([\\d.]+)"';
+    ext === "md" ? "v([\\d.]+)"
+    : ext === "json" ? '"version"\\s*:\\s*"([\\d.]+)"'
+    : '(?:VERSION|version)\\s*[=:]\\s*["\']([\\d.]+)["\']';
 
+  const versionSync = versionInfo.sourceOfTruth
+    ? {
+        source: `file:${sotFile}`,
+        extractPattern,
+        targets: versionInfo.files
+          .filter((f) => f !== versionInfo.sourceOfTruth)
+          .map((f) => ({
+            file: f.file,
+            pattern: targetPattern(f.file.split(".").pop() || ""),
+          })),
+      }
+    : undefined;
+
+  // -- Checks: auto-generate info-only checks for source directories -----------
+  const checks: Record<string, unknown>[] = [];
+  for (const section of result.sections) {
+    if (section.name === "Doc Coverage") {
+      for (const r of section.results) {
+        if (r.status === "info" && r.name === "Source directories") {
+          // Parse "Found: src, lib" -> generate glob checks
+          const dirs = r.detail.replace("Found: ", "").split(", ").filter(Boolean);
+          for (const dir of dirs) {
+            // Determine extensions based on what's in the directory
+            checks.push({
+              name: `${dir}/ source files`,
+              source: `glob:${dir}/**/*.ts`,
+              readmePattern: null,
+              infoOnly: true,
+            });
+            checks.push({
+              name: `${dir}/ JS files`,
+              source: `glob:${dir}/**/*.js`,
+              readmePattern: null,
+              infoOnly: true,
+            });
+          }
+        }
+      }
+    }
+  }
+  // Also add a check for shell scripts
+  checks.push({
+    name: "Shell scripts",
+    source: "glob:scripts/*.sh",
+    readmePattern: null,
+    infoOnly: true,
+  });
+
+  // -- Doc coverage: auto-generate from discovered source dirs -----------------
+  const docCoverage: Record<string, unknown>[] = [];
+  for (const section of result.sections) {
+    if (section.name === "Doc Coverage") {
+      for (const r of section.results) {
+        if (r.status === "info" && r.name === "Source directories") {
+          const dirs = r.detail.replace("Found: ", "").split(", ").filter(Boolean);
+          for (const dir of dirs) {
+            docCoverage.push({
+              name: `${dir}/ in docs`,
+              sourceDir: dir,
+              docFile: "README.md",
+              requiredMention: false,
+              severity: "warn" as const,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // -- Build final config ----------------------------------------------------
   const config: Record<string, unknown> = {
     readme: "README.md",
-    checks: [],
-    versionSync: versionInfo.sourceOfTruth
-      ? {
-          source: `file:${sotFile}`,
-          extractPattern,
-          targets: versionInfo.files
-            .filter((f) => f !== versionInfo.sourceOfTruth)
-            .map((f) => ({
-              file: f.file,
-              pattern: targetPattern(f.file.split(".").pop() || ""),
-            })),
-        }
-      : undefined,
+    checks,
+    versionSync,
     featureStatus: [],
-    docCoverage: [],
+    docCoverage,
   };
 
   const outPath = resolve(root, configPath);
   if (existsSync(outPath)) {
     console.log(`[skip] ${configPath} already exists`);
+    console.log("  To regenerate: rm verify-docs.json && run --init again");
   } else {
     writeFileSync(outPath, JSON.stringify(config, null, 2) + "\n", "utf-8");
     console.log(`[OK] Created ${configPath}`);
+    console.log("");
+    console.log("Generated config includes:");
+    console.log(`  versionSync: ${versionSync ? `${versionInfo.files.length} file(s) tracked` : "no version files found"}`);
+    console.log(`  checks:      ${checks.length} info-only check(s)`);
+    console.log(`  docCoverage: ${docCoverage.length} coverage zone(s)`);
+    console.log("");
+    console.log("Customize further: add countPattern to checks, featureStatus entries, etc.");
+    console.log("See: https://github.com/stsgs1980/Anti-hallucination-guard#verify-docsjson");
   }
 
   // Also create baseline
