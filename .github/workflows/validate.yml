@@ -55,9 +55,9 @@ jobs:
             ],
             "versionSync": {
               "source": "file:README.md",
-              "extractPattern": "v(\\d+\\.\\d+)\\s*\\|",
+              "extractPattern": "v(\\d+\\.\\d+\\.\\d+)",
               "targets": [
-                { "file": "AGENT_RULES.md", "pattern": "v(\\d+\\.\\d+)\\s*\\|" }
+                { "file": "AGENT_RULES.md", "pattern": "v(\\d+\\.\\d+\\.\\d+)" }
               ]
             }
           }
