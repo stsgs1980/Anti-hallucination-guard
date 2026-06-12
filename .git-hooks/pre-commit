@@ -1,6 +1,7 @@
 #!/bin/bash
 # anti-hallucination-guard -- pre-commit hook
 # Blocks commit if worklog.md is not updated.
+# Checks integrity of hooks and configuration (anti-tampering).
 # Automatically installed by setup.sh.
 # Other modules (cascade-guard, verify-docs) may append checks after this block.
 
@@ -11,6 +12,35 @@ MAX_AGE=600  # 10 minutes
 get_mtime() {
     stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null
 }
+
+# ---- Phase 1: Integrity check (anti-tampering) ----
+
+# Check that this hook hasn't been trivially bypassed
+# If core.hooksPath is set, hooks are redirected elsewhere
+HP=$(git config --get core.hooksPath 2>/dev/null || echo "")
+if [ -n "$HP" ]; then
+    echo ""
+    echo "  ERROR: core.hooksPath is set to '$HP'"
+    echo "  This bypasses the standard hooks directory."
+    echo "  Unset it: git config --unset core.hooksPath"
+    echo ""
+    exit 1
+fi
+
+# Quick self-check: this hook must contain "worklog" check
+# (catches trivial replacement like "echo '# bypass' > pre-commit")
+if ! grep -q "WORKLOG" "$0" 2>/dev/null; then
+    # This shouldn't happen -- we ARE the worklog check
+    # But if the hook was replaced and this is running, it's a sign of tampering
+    echo ""
+    echo "  ERROR: pre-commit hook appears to be tampered with"
+    echo "  (self-check failed: hook does not contain expected patterns)"
+    echo "  Re-install: bash anti-hallucination-guard/setup.sh"
+    echo ""
+    exit 1
+fi
+
+# ---- Phase 2: Worklog checks ----
 
 # 1. Check existence
 if [ ! -f "$WORKLOG" ]; then
@@ -56,5 +86,37 @@ if [ "$BLOCK_COUNT" -lt 2 ]; then
 fi
 
 echo "  OK: worklog.md is up to date ($BLOCK_COUNT blocks)"
+
+# ---- Phase 3: verify-docs (if configured) ----
+# Runs verify-docs on pre-commit if verify-docs.json exists
+# This catches doc drift BEFORE it gets committed (not just at push)
+
+if [ -f "verify-docs.json" ]; then
+    if command -v bun &>/dev/null; then
+        # Find verify-docs CLI
+        VD_CLI=""
+        if [ -f "anti-hallucination-guard/tools/verify-docs/src/cli.ts" ]; then
+            VD_CLI="anti-hallucination-guard/tools/verify-docs/src/cli.ts"
+        elif [ -f "tools/verify-docs/src/cli.ts" ]; then
+            VD_CLI="tools/verify-docs/src/cli.ts"
+        fi
+        
+        if [ -n "$VD_CLI" ]; then
+            echo "  Running verify-docs (pre-commit check)..."
+            bun run "$VD_CLI" --ci 2>&1
+            VD_RESULT=$?
+            if [ $VD_RESULT -ne 0 ]; then
+                echo ""
+                echo "  ERROR: verify-docs found mismatches!"
+                echo "  Fix documentation before committing."
+                echo "  Or bypass with: git commit --no-verify (NOT recommended)"
+                echo ""
+                exit 1
+            fi
+            echo "  OK: verify-docs passed"
+        fi
+    fi
+fi
+
 # NOTE: Do NOT add 'exit 0' here.
 # Other modules (cascade-guard, verify-docs) append their checks after this block.

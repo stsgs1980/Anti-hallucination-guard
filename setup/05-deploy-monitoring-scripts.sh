@@ -32,3 +32,23 @@ else
     chmod +x "$AUDIT_SCRIPT"
     ok "scripts/audit.sh created"
 fi
+
+SYNC_SCRIPT="$PROJECT_ROOT/scripts/sync-task-state.sh"
+
+if [ -f "$SYNC_SCRIPT" ]; then
+    warn "scripts/sync-task-state.sh already exists -- skipping"
+else
+    cp "$MODULE_ROOT/scripts/sync-task-state.sh" "$SYNC_SCRIPT"
+    chmod +x "$SYNC_SCRIPT"
+    ok "scripts/sync-task-state.sh created"
+fi
+
+INTEGRITY_SCRIPT="$PROJECT_ROOT/scripts/check-hooks-integrity.sh"
+
+if [ -f "$INTEGRITY_SCRIPT" ]; then
+    warn "scripts/check-hooks-integrity.sh already exists -- skipping"
+else
+    cp "$MODULE_ROOT/scripts/check-hooks-integrity.sh" "$INTEGRITY_SCRIPT"
+    chmod +x "$INTEGRITY_SCRIPT"
+    ok "scripts/check-hooks-integrity.sh created"
+fi

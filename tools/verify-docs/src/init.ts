@@ -5,10 +5,10 @@
 // Run: bunx verify-docs-init
 // Or:  bun run /path/to/verify/src/init.ts
 //
-// Creates verify-docs.json and installs git pre-push hook
+// Creates verify-docs.json with all sections and installs git pre-push hook
 // ============================================================================
 
-import { writeFileSync, existsSync, mkdirSync, copyFileSync, chmodSync } from "fs";
+import { writeFileSync, existsSync, mkdirSync, chmodSync } from "fs";
 import { resolve } from "path";
 
 const root = resolve(process.cwd());
@@ -40,11 +40,20 @@ if (existsSync(configPath)) {
         readmePattern: "(\\d+) commits",
         tolerance: 5
       }
-    ]
+    ],
+    versionSync: {
+      source: "file:package.json",
+      extractPattern: "\"version\":\\s*\"([\\d.]+)\"",
+      targets: [
+        { file: "README.md", pattern: "v([\\d.]+)" }
+      ]
+    },
+    featureStatus: [],
+    docCoverage: []
   };
 
   writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2) + "\n");
-  console.log(`[ok] Created verify-docs.json`);
+  console.log(`[ok] Created verify-docs.json with all sections`);
 }
 
 // ── Step 2: Install git pre-push hook ──────────────────────────────────────
@@ -108,5 +117,8 @@ console.log("");
 console.log("Setup complete! Now:");
 console.log("  1. Edit verify-docs.json to match your project");
 console.log("  2. Add numbers to your README (e.g. \"12 components\")");
-console.log("  3. Run: verify-docs");
+console.log("  3. Configure versionSync: set source to your single source of truth");
+console.log("  4. Add featureStatus entries for features marked as stubs");
+console.log("  5. Add docCoverage entries for directories that must be documented");
+console.log("  6. Run: verify-docs");
 console.log("");

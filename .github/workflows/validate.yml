@@ -8,7 +8,7 @@ on:
 
 jobs:
   validate:
-    name: Module purity + fingerprints
+    name: Module purity + fingerprints + verify-docs
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,3 +25,47 @@ jobs:
             bash -n "$f" || { echo "SYNTAX ERROR: $f"; exit 1; }
           done
           echo "All .sh files pass syntax check"
+
+  verify-docs:
+    name: verify-docs self-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Create test verify-docs.json
+        run: |
+          cat > verify-docs.json << 'EOF'
+          {
+            "readme": "README.md",
+            "checks": [
+              {
+                "name": "verify-docs source files",
+                "source": "glob:tools/verify-docs/src/*.ts",
+                "readmePattern": null,
+                "infoOnly": true
+              },
+              {
+                "name": "Shell scripts",
+                "source": "glob:scripts/*.sh",
+                "readmePattern": null,
+                "infoOnly": true
+              }
+            ],
+            "versionSync": {
+              "source": "file:README.md",
+              "extractPattern": "v(\\d+\\.\\d+)\\s*\\|",
+              "targets": [
+                { "file": "AGENT_RULES.md", "pattern": "v(\\d+\\.\\d+)\\s*\\|" }
+              ]
+            }
+          }
+          EOF
+
+      - name: Run verify-docs
+        run: bun run tools/verify-docs/src/cli.ts --ci
+
+      - name: Clean up test config
+        if: always()
+        run: rm -f verify-docs.json

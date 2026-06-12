@@ -75,3 +75,11 @@ else
     chmod +x "$HOOK_DIR/pre-commit"
     ok "pre-commit hook installed"
 fi
+
+# Save integrity snapshot after hook installation
+# This snapshot should be committed to git so that tampering is detectable
+if [ -f "$PROJECT_ROOT/scripts/check-hooks-integrity.sh" ]; then
+    bash "$PROJECT_ROOT/scripts/check-hooks-integrity.sh" --snapshot 2>/dev/null && \
+        ok "Integrity snapshot created (commit .ahg-integrity.json to git)" || \
+        warn "Could not create integrity snapshot (non-critical)"
+fi
