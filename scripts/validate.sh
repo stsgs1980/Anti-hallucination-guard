@@ -41,7 +41,6 @@ ALLOWED=(
     "scripts/validate.sh"
     "scripts/branch-protect.sh"
     "scripts/branch-protect-lib.sh"
-    "scripts/check-sandbox.sh"
     "scripts/sync-task-state.sh"
     "scripts/check-hooks-integrity.sh"
     "skills/"

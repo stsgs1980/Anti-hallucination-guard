@@ -372,7 +372,6 @@ anti-hallucination-guard/
     validate.sh                     -- module purity checker
     branch-protect.sh                -- branch protection (orchestrator)
     branch-protect-lib.sh           -- branch protection (config + helpers)
-    check-sandbox.sh                -- Z.ai sandbox verification
     sync-task-state.sh              -- auto-sync task statuses
     check-hooks-integrity.sh        -- detect hook tampering / bypass
   tools/
