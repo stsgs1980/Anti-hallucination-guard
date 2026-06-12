@@ -223,4 +223,4 @@ Stage Summary:
 
 ---
 
-v2.0.0 | 2026-06-13 | anti-hallucination-guard
+v2.1.0 | 2026-06-13 | anti-hallucination-guard
