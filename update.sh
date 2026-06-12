@@ -97,7 +97,32 @@ git pull origin main 2>&1 || {
 
 ok "Pulled latest changes"
 
-# ---- 2. Re-run setup.sh ----
+# ---- 2. Clean up obsolete files from previous versions ----
+cd "$PROJECT_ROOT"
+
+info "Checking for obsolete files from previous AHG versions..."
+
+# v1.0 -> v2.0: check-hooks-integrity.sh renamed to check-hooks-verify.sh
+if [ -f "$PROJECT_ROOT/scripts/check-hooks-integrity.sh" ]; then
+    # Only remove if the new version exists (confirm v2.0 is deployed)
+    if [ -f "$PROJECT_ROOT/scripts/check-hooks-verify.sh" ]; then
+        rm -f "$PROJECT_ROOT/scripts/check-hooks-integrity.sh"
+        ok "Removed obsolete: scripts/check-hooks-integrity.sh (replaced by check-hooks-verify.sh)"
+    else
+        warn "Old scripts/check-hooks-integrity.sh found but check-hooks-verify.sh not yet deployed"
+        warn "Setup.sh will handle this -- continuing"
+    fi
+fi
+
+# v1.0: old monolith check-hooks.sh (before split into snapshot/verify)
+if [ -f "$PROJECT_ROOT/scripts/check-hooks.sh" ]; then
+    if [ -f "$PROJECT_ROOT/scripts/check-hooks-snapshot.sh" ]; then
+        rm -f "$PROJECT_ROOT/scripts/check-hooks.sh"
+        ok "Removed obsolete: scripts/check-hooks.sh (replaced by snapshot/verify split)"
+    fi
+fi
+
+# ---- 3. Re-run setup.sh ----
 cd "$PROJECT_ROOT"
 
 if [ -f "$MODULE_ROOT/setup.sh" ]; then
@@ -108,7 +133,7 @@ else
     warn "setup.sh not found at $MODULE_ROOT/setup.sh"
 fi
 
-# ---- 3. Remind to commit the submodule update ----
+# ---- 4. Remind to commit the submodule update ----
 echo ""
 echo "============================================"
 echo "  Update Complete!"
