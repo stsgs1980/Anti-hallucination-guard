@@ -498,7 +498,9 @@ anti-hallucination-guard/
         verify-section4.ts         -- feature status (stub detection)
         verify-section5.ts         -- documentation coverage
         engine.ts                  -- verification engine (orchestrator)
-        auto-config.ts               -- auto-generate VerifyConfig from discover
+        auto-config.ts             -- auto-generate VerifyConfig from discover
+        discover-project.ts        -- project type/source dir detection
+        cli-helpers.ts             -- shared output formatting
         cli.ts                     -- CLI entry point (5 modes)
         init.ts                    -- quick config generator
         discover.ts                -- auto-discover orchestrator
