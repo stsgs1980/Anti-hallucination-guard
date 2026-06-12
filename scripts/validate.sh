@@ -42,7 +42,10 @@ ALLOWED=(
     "scripts/branch-protect.sh"
     "scripts/branch-protect-lib.sh"
     "scripts/sync-task-state.sh"
-    "scripts/check-hooks-integrity.sh"
+    "scripts/ahg.sh"
+    "scripts/check-hooks-lib.sh"
+    "scripts/check-hooks-snapshot.sh"
+    "scripts/check-hooks-verify.sh"
     "skills/"
     "skills/anti-hallucination-guard/"
     "skills/anti-hallucination-guard/SKILL.md"
@@ -60,6 +63,12 @@ ALLOWED=(
     "tools/verify-docs/src/engine.ts"
     "tools/verify-docs/src/cli.ts"
     "tools/verify-docs/src/init.ts"
+    "tools/verify-docs/src/discover-versions.ts"
+    "tools/verify-docs/src/discover-changelog.ts"
+    "tools/verify-docs/src/discover-coverage.ts"
+    "tools/verify-docs/src/discover-baseline.ts"
+    "tools/verify-docs/src/discover.ts"
+    "tools/verify-docs/src/bump.ts"
     "tools/verify-docs/package.json"
     "tools/verify-docs/templates/"
     "tools/verify-docs/templates/pre-push"
@@ -94,6 +103,18 @@ ERRORS=0
 
 echo "=== validate.sh: repository purity check ==="
 echo ""
+
+# Phase 0: Check for core.hooksPath bypass (anti-tampering)
+HP=$(git -C "$MODULE_ROOT" config --get core.hooksPath 2>/dev/null || echo "")
+if [ -n "$HP" ]; then
+    echo "[-] core.hooksPath is set to '$HP'"
+    echo "    This bypasses the standard .git/hooks/ directory."
+    echo "    Unset it: git config --unset core.hooksPath"
+    echo ""
+    ERRORS=$((ERRORS + 1))
+else
+    echo "[+] core.hooksPath -- not set (OK)"
+fi
 
 # Phase 1: check that all tracked files are whitelisted
 TRACKED_FILES=$(git -C "$MODULE_ROOT" ls-files)
@@ -136,6 +157,27 @@ done
 
 echo ""
 echo "=== Result ==="
+
+# Phase 2: Unicode policy check (Rule 14)
+UNICODE_ERRORS=0
+while IFS= read -r FILE; do
+    if [ -f "$MODULE_ROOT/$FILE" ]; then
+        # Check for prohibited Unicode: em dash, en dash, box drawing
+        if grep -Pq '[\x{2014}\x{2013}\x{2500}-\x{257F}\x{1F000}-\x{1FFFF}]' "$MODULE_ROOT/$FILE" 2>/dev/null; then
+            echo "[-] UNICODE POLICY: $FILE contains prohibited Unicode characters"
+            UNICODE_ERRORS=$((UNICODE_ERRORS + 1))
+        fi
+    fi
+done < <(git -C "$MODULE_ROOT" ls-files)
+
+if [ "$UNICODE_ERRORS" -gt 0 ]; then
+    echo ""
+    echo "  UNICODE POLICY VIOLATIONS: $UNICODE_ERRORS files"
+    echo "  Prohibited: em dash (U+2014), en dash (U+2013), box drawing (U+2500-257F)"
+    echo "  Replace: -- for dashes, - for section dividers"
+    echo ""
+    ERRORS=$((ERRORS + UNICODE_ERRORS))
+fi
 
 if [ "$ERRORS" -eq 0 ]; then
     echo "Repository is clean. All files match the module."

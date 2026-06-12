@@ -1,6 +1,6 @@
 {
   "name": "verify-docs",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Data-driven doc consistency checker. Verifies numbers in your README match the actual codebase. Works with any project.",
   "bin": {
     "verify-docs": "./src/cli.ts",

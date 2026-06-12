@@ -1,4 +1,4 @@
-// verify-docs.plugins.ts — Example custom source resolvers
+// verify-docs.plugins.ts -- Example custom source resolvers
 //
 // This file registers project-specific source types for verify-docs.
 // Place it in your project root alongside verify-docs.json.
@@ -10,7 +10,7 @@ export default function register({ registerSource }: {
   registerSource: (prefix: string, resolver: (source: string, root: string) => number | null) => void
 }) {
 
-  // custom:packages — count workspace packages with package.json
+  // custom:packages -- count workspace packages with package.json
   registerSource("custom:packages", (_source: string, root: string) => {
     try {
       return readdirSync(join(root, "packages"), { withFileTypes: true })
@@ -23,7 +23,7 @@ export default function register({ registerSource }: {
     } catch { return null; }
   });
 
-  // custom:screens — count Next.js dashboard pages (excluding dynamic routes)
+  // custom:screens -- count Next.js dashboard pages (excluding dynamic routes)
   registerSource("custom:screens", (_source: string, root: string) => {
     const results: string[] = [];
     const dir = join(root, "src/app/(dashboard)");
@@ -41,7 +41,7 @@ export default function register({ registerSource }: {
     return results.length;
   });
 
-  // custom:i18n — count unique i18n namespace keys
+  // custom:i18n -- count unique i18n namespace keys
   registerSource("custom:i18n", (_source: string, root: string) => {
     try {
       const src = readFileSync(join(root, "src/lib/i18n/translations/index.ts"), "utf-8");

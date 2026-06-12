@@ -1,4 +1,4 @@
-// install-hooks.ts — Install git hooks from templates/ into .git/hooks/
+// install-hooks.ts -- Install git hooks from templates/ into .git/hooks/
 // Run: bun run install-hooks.ts
 // Add to package.json "postinstall" for automatic setup.
 
@@ -14,12 +14,12 @@ const GIT_HOOKS_DIR = join(ROOT, ".git", "hooks");
 const SOURCE_DIR = join(ROOT, "scripts", "git-hooks");
 
 if (!existsSync(GIT_HOOKS_DIR)) {
-  console.log("[hooks] .git/hooks not found — skipping (not a git repo)");
+  console.log("[hooks] .git/hooks not found -- skipping (not a git repo)");
   process.exit(0);
 }
 
 if (!existsSync(SOURCE_DIR)) {
-  console.log("[hooks] scripts/git-hooks/ not found — nothing to install");
+  console.log("[hooks] scripts/git-hooks/ not found -- nothing to install");
   process.exit(0);
 }
 

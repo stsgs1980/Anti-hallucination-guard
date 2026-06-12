@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# verify-docs pre-push template
+# Runs doc consistency check before allowing push.
+
 echo ""
 echo "Verifying doc consistency before push..."
 echo ""
@@ -8,12 +11,12 @@ echo ""
 cd "$(git rev-parse --show-toplevel)"
 
 if command -v bun &>/dev/null; then
-  bunx verify-docs
+  bun run tools/verify-docs/src/cli.ts --ci
 elif command -v npx &>/dev/null; then
   npx verify-docs
 else
-  echo "ERROR: bun or npx required"
-  exit 1
+  echo "WARN: bun or npx not found -- skipping doc check"
+  exit 0
 fi
 
 RESULT=$?

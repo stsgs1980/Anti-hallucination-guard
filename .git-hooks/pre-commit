@@ -15,8 +15,10 @@ get_mtime() {
 
 # ---- Phase 1: Integrity check (anti-tampering) ----
 
-# Check that this hook hasn't been trivially bypassed
-# If core.hooksPath is set, hooks are redirected elsewhere
+# NOTE: If core.hooksPath is set, this hook is NEVER CALLED by Git.
+# The check below only catches accidental misconfiguration when the hook
+# is run manually. For real enforcement, use CI + branch protection rules.
+# The pre-push hook and validate.sh also check hooksPath.
 HP=$(git config --get core.hooksPath 2>/dev/null || echo "")
 if [ -n "$HP" ]; then
     echo ""
@@ -87,6 +89,18 @@ fi
 
 echo "  OK: worklog.md is up to date ($BLOCK_COUNT blocks)"
 
+# ---- Phase 2.5: sync-task-state (cascade-state auto-sync) ----
+if [ -f "cascade-state.json" ] && [ -f "scripts/sync-task-state.sh" ]; then
+    bash scripts/sync-task-state.sh 2>&1
+    SYNC_RESULT=$?
+    if [ $SYNC_RESULT -ne 0 ]; then
+        echo ""
+        echo "  WARN: sync-task-state reported issues"
+        echo "  (non-blocking -- check cascade-state.json)"
+        echo ""
+    fi
+fi
+
 # ---- Phase 3: verify-docs (if configured) ----
 # Runs verify-docs on pre-commit if verify-docs.json exists
 # This catches doc drift BEFORE it gets committed (not just at push)
@@ -115,6 +129,29 @@ if [ -f "verify-docs.json" ]; then
             fi
             echo "  OK: verify-docs passed"
         fi
+    fi
+fi
+
+# ---- Phase 3.5: auto-discover fallback (if no verify-docs.json) ----
+if [ ! -f "verify-docs.json" ] && command -v bun &>/dev/null; then
+    VD_CLI=""
+    if [ -f "anti-hallucination-guard/tools/verify-docs/src/cli.ts" ]; then
+        VD_CLI="anti-hallucination-guard/tools/verify-docs/src/cli.ts"
+    elif [ -f "tools/verify-docs/src/cli.ts" ]; then
+        VD_CLI="tools/verify-docs/src/cli.ts"
+    fi
+    if [ -n "$VD_CLI" ]; then
+        echo "  No verify-docs.json -- running auto-discover..."
+        bun run "$VD_CLI" --discover 2>&1
+        DISCOVER_RESULT=$?
+        if [ $DISCOVER_RESULT -ne 0 ]; then
+            echo ""
+            echo "  ERROR: auto-discover found issues!"
+            echo "  Fix or create verify-docs.json: bun run $VD_CLI --init"
+            echo ""
+            exit 1
+        fi
+        echo "  OK: auto-discover passed"
     fi
 fi
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 // ============================================================================
-// init.ts — Quick setup for verify-docs in any project
+// init.ts -- Quick setup for verify-docs in any project
 //
 // Run: bunx verify-docs-init
 // Or:  bun run /path/to/verify/src/init.ts
@@ -13,7 +13,7 @@ import { resolve } from "path";
 
 const root = resolve(process.cwd());
 
-// ── Step 1: Create verify-docs.json ────────────────────────────────────────
+// -- Step 1: Create verify-docs.json -----------------------------------------
 
 const configPath = resolve(root, "verify-docs.json");
 
@@ -56,14 +56,14 @@ if (existsSync(configPath)) {
   console.log(`[ok] Created verify-docs.json with all sections`);
 }
 
-// ── Step 2: Install git pre-push hook ──────────────────────────────────────
+// -- Step 2: Install git pre-push hook ---------------------------------------
 
 const gitDir = resolve(root, ".git");
 const hooksDir = resolve(gitDir, "hooks");
 const hookDest = resolve(hooksDir, "pre-push");
 
 if (!existsSync(gitDir)) {
-  console.log("[skip] No .git/ directory — skipping hook installation");
+  console.log("[skip] No .git/ directory -- skipping hook installation");
 } else if (existsSync(hookDest)) {
   console.log("[skip] .git/hooks/pre-push already exists");
 } else {
@@ -111,7 +111,7 @@ exit 0
   console.log("[ok] Installed .git/hooks/pre-push");
 }
 
-// ── Done ───────────────────────────────────────────────────────────────────
+// -- Done --------------------------------------------------------------------
 
 console.log("");
 console.log("Setup complete! Now:");

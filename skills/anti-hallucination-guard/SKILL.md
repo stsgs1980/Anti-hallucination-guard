@@ -1,18 +1,59 @@
-# Anti-Hallucination Guard v1.4
+# Anti-Hallucination Guard v2.0
 
 > Auto-activate on session start. Setup.sh merges rules into AGENT_RULES.md with markers.
-> Compatible with cascade-guard: Rule 1-10 (AHG) + Rule C-1..C-9 (Cascade) coexist.
+> Compatible with cascade-guard: Rule 1-14 (AHG) + Rule C-1..C-9 (Cascade) coexist.
+> Three-mode architecture: DISCOVER (proactive) -> GENERATE (atomic) -> VERIFY (enforce).
 
 ## Purpose
 
 Prevent AI agent from hallucinating, looping, or faking activity
 in Z.ai sandbox environments. Prevent documentation from drifting
-away from actual codebase state.
+away from actual codebase state. Prevent agents from bypassing
+anti-hallucination mechanisms.
 
 ## Activation
 
 This skill MUST auto-activate at the beginning of every session.
 Agent must read AGENT_RULES.md and worklog.md before any work.
+
+## Three-mode architecture
+
+### DISCOVER (proactive -- no config required)
+
+Auto-scans the project and reports issues without needing verify-docs.json:
+- Finds all files containing version numbers, checks if they are in sync
+- Finds CHANGELOG files, verifies freshness (latest entry matches current version)
+- Scans source directories for code files not mentioned in documentation
+- Compares current file list against baseline (detects deleted files)
+
+```bash
+bash scripts/ahg.sh discover
+```
+
+Runs automatically as fallback in pre-commit hook when verify-docs.json does not exist.
+
+### GENERATE (atomic changes)
+
+Updates versions and generates configuration atomically:
+- `ahg bump X.Y.Z` -- updates ALL discovered version files at once + CHANGELOG entry
+- `ahg init` -- generates verify-docs.json from auto-discover results
+- `ahg baseline` -- creates .ahg-baseline.json for deletion tracking
+
+```bash
+bash scripts/ahg.sh bump 2.1.0
+bash scripts/ahg.sh bump 2.1.0 --dry-run  # preview
+bash scripts/ahg.sh init
+bash scripts/ahg.sh baseline
+```
+
+### VERIFY (enforce existing checks)
+
+Cross-checks documentation against the codebase using verify-docs.json config:
+
+```bash
+bash scripts/ahg.sh verify
+bash scripts/ahg.sh verify --ci
+```
 
 ## Setup Procedure
 
@@ -24,7 +65,7 @@ Setup.sh uses marker-based merging (`<!-- AHG:START -->` / `<!-- AHG:END -->`).
 If cascade-guard is also installed, its block (`<!-- CASCADE-GUARD:START -->` / `<!-- CASCADE-GUARD:END -->`)
 will coexist without conflict.
 
-AHG rules (Rule 1-10): worklog, read-before-write, no-loops, honest reporting, work structure, sandbox verification, session start protocol, documentation sync, integrity protection.
+AHG rules (Rule 1-14): worklog, read-before-write, no-loops, honest reporting, work structure, sandbox verification, session start protocol, documentation sync, integrity protection, anti-monolith, ahg bump, pre-commit checklist, unicode policy.
 Cascade rules (C-1 to C-9): source-of-truth, start-protocol, deps, priorities, acceptance verification.
 
 ### Step 2: Create worklog.md
@@ -33,13 +74,12 @@ Create /worklog.md in project root if not exists.
 
 ### Step 3: Setup pre-commit hook
 
-Create .git/hooks/pre-commit from .git-hooks/pre-commit:
-- Check worklog.md exists
-- Check worklog.md updated within 10 minutes
-- Check worklog.md has proper block format
-- Block commit if any check fails
-- Cross-platform: works on Linux and macOS
-- chmod +x the hook
+Create .git/hooks/pre-commit from .git-hooks/pre-commit. Five phases:
+1. Integrity check (core.hooksPath detection, self-check)
+2. Worklog checks (exists, fresh <10min, >50 bytes, >2 blocks)
+2.5. sync-task-state (cascade-state auto-sync, non-blocking)
+3. verify-docs (if verify-docs.json exists, blocking)
+3.5. auto-discover fallback (if no config, blocking)
 
 If a pre-commit hook already exists (e.g. from cascade-guard), AHG checks are appended.
 
@@ -54,17 +94,19 @@ If a pre-push hook already exists, AHG validation is appended (not overwritten).
 ### Step 5: Install monitoring scripts
 
 Deploy to scripts/:
+- ahg.sh -- unified CLI entry point for all AHG commands
 - check-agent.sh -- activity monitor (cron or manual)
 - audit.sh -- post-session audit with score
-- validate.sh -- module purity checker
+- validate.sh -- module purity + Unicode policy checker
 - sync-task-state.sh -- auto-sync task statuses based on implementation files
-- check-hooks-integrity.sh -- detect hook tampering / bypass attempts
+- check-hooks-snapshot.sh -- create integrity snapshot
+- check-hooks-verify.sh -- verify against snapshot (anti-tampering)
 
 ### Step 6: Cascade-guard integration (auto-detect)
 
 If cascade-guard is detected (via .gitmodules or find), setup.sh automatically:
 - Adds cascade-state.json freshness checks to pre-commit hook
-- Confirms rule namespacing: Rule 1-10 (AHG) + C-1..C-9 (Cascade)
+- Confirms rule namespacing: Rule 1-14 (AHG) + C-1..C-9 (Cascade)
 - Both marker blocks coexist in AGENT_RULES.md
 
 ### Step 7: Initialize git (if needed)
@@ -82,21 +124,30 @@ git commit -m "init: anti-hallucination guard setup"
 - pre-commit hook exists and executable: YES
 - pre-push hook exists and executable: YES
 - git initialized: YES
+- auto-discover runs without errors: YES
 
-## Runtime Rules
+## Runtime Rules (14 Rules)
 
 During work execution, these rules are NON-NEGOTIABLE:
 
-1. BEFORE any file write: Read the file first
-2. AFTER any file write: Update worklog.md
-3. AFTER logical block: git commit (blocked if worklog stale)
-4. ON 3rd repeat: STOP and notify user
-5. NEVER claim completion without verification
-6. SESSION START: scan project structure, compare with docs, fix drift first
-7. DOC SYNC: no new code without updating documentation
-8. INTEGRITY: never disable, bypass, or weaken anti-hallucination mechanisms
+| Rule | Purpose |
+|------|---------|
+| 1 | worklog -- BEFORE and AFTER every action |
+| 2 | Read before write |
+| 3 | One logical block -- one commit |
+| 4 | No loops (stop after 3rd attempt) |
+| 5 | Honest reporting |
+| 6 | Work structure (read rules -> step -> execute -> log -> commit) |
+| 7 | Sandbox verification (no fake setup) |
+| 8 | Session Start Protocol (scan, compare, fix drift) |
+| 9 | Documentation sync (no code without docs) |
+| 10 | Integrity protection (never bypass mechanisms) |
+| 11 | Anti-monolith (no file over 250 lines) |
+| 12 | ahg bump (atomic version updates) |
+| 13 | Pre-commit mandatory checklist |
+| 14 | UNICODE_POLICY (ASCII-only, no emoji, no Unicode graphics) |
 
-## verify-docs Engine (5 Sections)
+## verify-docs Engine (5 Sections + auto-discover)
 
 verify-docs cross-checks documentation against the actual codebase across 5 dimensions:
 
@@ -108,60 +159,19 @@ verify-docs cross-checks documentation against the actual codebase across 5 dime
 | 4. Feature status | Stub markers don't contradict existing code | `featureStatus` |
 | 5. Doc coverage | Code files are mentioned in documentation | `docCoverage` |
 
-### Section 3: Version Synchronization
+Auto-discover modules (no config required):
+- `discover-versions.ts` -- finds all files with version patterns
+- `discover-changelog.ts` -- finds CHANGELOG files, checks freshness
+- `discover-coverage.ts` -- finds source dirs, checks doc mentions
+- `discover-baseline.ts` -- creates/checks file baselines for deletion detection
 
-Prevents the common problem where README, ARCHITECTURE, and other docs
-each carry their own version that diverges over time.
+## Baseline tracking
 
-Config: define one source of truth (e.g. manifest.json or package.json),
-and list target files that must match.
+Records which files exist at setup time. Detects deleted files on subsequent runs.
 
-```json
-"versionSync": {
-  "source": "file:package.json",
-  "extractPattern": "\"version\":\\s*\"([\\d.]+)\"",
-  "targets": [
-    { "file": "README.md", "pattern": "v([\\d.]+)" },
-    { "file": "ARCHITECTURE.md", "pattern": "version:\\s*([\\d.]+)" }
-  ]
-}
-```
-
-### Section 4: Feature Status (Stub Detection)
-
-Detects features documented as "stubs / not implemented / TODO"
-but which actually have implementation files in the codebase.
-
-```json
-"featureStatus": [
-  {
-    "name": "Feature name",
-    "stubPatterns": ["stub", "TODO", "not implemented"],
-    "docFile": "README.md",
-    "contextPattern": "feature.name",
-    "implementationFiles": ["src/lib/feature.js"],
-    "implementedPatterns": ["implemented", "working"]
-  }
-]
-```
-
-### Section 5: Documentation Coverage
-
-Scans a source directory for files, then checks whether each file
-is mentioned in a documentation file (e.g. ARCHITECTURE.md).
-
-```json
-"docCoverage": [
-  {
-    "name": "ARCHITECTURE.md coverage",
-    "sourceDir": "src/lib",
-    "glob": "*.js",
-    "docFile": "ARCHITECTURE.md",
-    "requiredMention": true,
-    "severity": "warn",
-    "excludePatterns": ["index.js", "*.test.js"]
-  }
-]
+```bash
+bash scripts/ahg.sh baseline           # create baseline
+bash scripts/ahg.sh baseline --check   # check for deleted files
 ```
 
 ## sync-task-state.sh
@@ -173,10 +183,11 @@ Each task should have an `implementationFiles` array listing files that
 prove the task is implemented. If ALL files exist, the task status is
 automatically changed from "pending" to "implemented".
 
+Integrated into pre-commit hook Phase 2.5.
+
 ```bash
-bash scripts/sync-task-state.sh                  # default: cascade-state.json
-bash scripts/sync-task-state.sh my-state.json    # custom file
-bash scripts/sync-task-state.sh --dry-run        # preview without writing
+bash scripts/ahg.sh sync               # default: cascade-state.json
+bash scripts/ahg.sh sync --dry-run     # preview without writing
 ```
 
 ## Compatibility with Cascade-guard
@@ -185,10 +196,10 @@ When both modules are installed:
 
 | Aspect | AHG | Cascade-guard |
 |--------|-----|---------------|
-| Rule namespace | Rule 1-10 | C-1 to C-9 |
+| Rule namespace | Rule 1-14 | C-1 to C-9 |
 | AGENT_RULES.md markers | `<!-- AHG:START/END -->` | `<!-- CASCADE-GUARD:START/END -->` |
 | State file | worklog.md | cascade-state.json |
-| Pre-commit checks | worklog freshness | cascade-state.json validity |
+| Pre-commit checks | worklog + discover + verify | cascade-state.json validity |
 | Pre-push checks | validate.sh (module purity) | validate.sh (module purity) |
 | Hook strategy | Append if foreign exists | Append if foreign exists |
 
@@ -209,26 +220,29 @@ Flag these behaviors as potential hallucination:
 - Hooks modified or replaced (integrity check fails)
 - core.hooksPath set to bypass hooks
 - verify-docs.json checks removed to avoid failures
+- File exceeds 250 lines (anti-monolith violation)
+- Version updated manually instead of ahg bump
+- Unicode graphics or emoji in code output
 
-## check-hooks-integrity.sh
+## check-hooks integrity system
 
-Detects tampering with git hooks and key configuration files.
-Uses SHA256 fingerprints to verify hooks have not been replaced or modified.
+Split into two scripts for anti-monolith compliance:
+- `check-hooks-snapshot.sh` -- creates SHA256 fingerprints
+- `check-hooks-verify.sh` -- compares against snapshot, detects tampering, offers repair
 
 ```bash
-bash scripts/check-hooks-integrity.sh --snapshot  # save fingerprints
-bash scripts/check-hooks-integrity.sh --check     # verify integrity
-bash scripts/check-hooks-integrity.sh --repair    # re-install from module
+bash scripts/ahg.sh snapshot              # create integrity snapshot
+bash scripts/ahg.sh integrity             # verify against snapshot
+bash scripts/ahg.sh integrity --repair    # re-install from module
 ```
-
-Automatically creates a snapshot during setup.sh.
-The pre-commit hook also runs a quick self-check (detects core.hooksPath bypass).
 
 ## Triggers
 
 Activate when:
 - Session starts (auto)
-- User mentions: anti-hallucination, guard, rules, discipline
+- User mentions: anti-hallucination, guard, rules, discipline, ahg
 - Agent seems to loop or stall
 - worklog not updated for extended period
-- Documentation drift detected by verify-docs
+- Documentation drift detected by verify-docs or auto-discover
+- Version mismatch detected across files
+- File exceeds 250 lines
