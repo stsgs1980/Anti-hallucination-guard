@@ -61,6 +61,7 @@ ALLOWED=(
     "tools/verify-docs/src/verify-section4.ts"
     "tools/verify-docs/src/verify-section5.ts"
     "tools/verify-docs/src/engine.ts"
+    "tools/verify-docs/src/auto-config.ts"
     "tools/verify-docs/src/cli.ts"
     "tools/verify-docs/src/init.ts"
     "tools/verify-docs/src/discover-versions.ts"

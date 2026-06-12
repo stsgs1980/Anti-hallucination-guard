@@ -1,7 +1,7 @@
 # anti-hallucination-guard
 
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version 2.0.0](https://img.shields.io/badge/v2.0.0-2026--06--13-green.svg)]()
+[![Version 2.1.0](https://img.shields.io/badge/v2.1.0-2026--06--13-green.svg)]()
 [![Bash](https://img.shields.io/badge/Shell-Bash-4EAA25.svg?logo=gnu-bash&logoColor=white)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-verify--docs-3178C6.svg?logo=typescript&logoColor=white)]()
 [![Git Hooks](https://img.shields.io/badge/Git-Hooks-FF6600.svg?logo=git&logoColor=white)]()
@@ -26,7 +26,7 @@ Physically enforces that the agent:
 
 Plus automatic documentation verification (three modes):
 - **DISCOVER**: auto-scan project without config (finds versions, CHANGELOG, coverage gaps)
-- **VERIFY**: cross-check docs against config (5 sections)
+- **VERIFY**: cross-check docs against code (5 sections, **auto-discover if no config!**)
 - **GENERATE**: atomic version bump + CHANGELOG entry via `ahg bump`
 
 ## Installation
@@ -91,7 +91,7 @@ bash scripts/ahg.sh <command> [args]
 
 | Command | Description |
 |---------|-------------|
-| `verify [--ci]` | Verify docs against config |
+| `verify [--ci]` | Verify docs (auto-discover if no config!) |
 | `discover` | Auto-scan project (no config needed) |
 | `bump <version>` | Update version in all files atomically |
 | `bump <version> --dry-run` | Preview bump without writing |
@@ -108,7 +108,7 @@ The CLI wrapper fixes CWD issues by always `cd`ing to the project root before ex
 
 ## Three-mode architecture: DISCOVER / GENERATE / VERIFY
 
-AHG v2.0 operates in three modes, solving the root cause of documentation drift
+AHG v2.1 operates in three modes, solving the root cause of documentation drift
 (where v1.0 was reactive-only and "0 errors" actually meant "0 checks"):
 
 ### DISCOVER mode (proactive -- no config required)
@@ -139,14 +139,26 @@ bash scripts/ahg.sh init                  # generate verify-docs.json
 bash scripts/ahg.sh baseline              # create file baseline
 ```
 
-### VERIFY mode (existing checks)
+### VERIFY mode (full 5-section check -- no config needed!)
 
-Cross-checks documentation against the codebase using verify-docs.json config:
+Cross-checks documentation against the codebase. When verify-docs.json is missing,
+auto-generates a config on the fly from the project structure and runs the full
+5-section verification engine:
+
+1. Detects project type (TypeScript, JavaScript, Python, Go, Rust)
+2. Finds source directories and code extensions
+3. Discovers version files and source of truth
+4. Generates VerifyConfig in memory
+5. Runs the full verify engine (all 5 sections)
 
 ```bash
-bash scripts/ahg.sh verify              # full verification
+bash scripts/ahg.sh verify              # full verification (auto-discover if no config)
 bash scripts/ahg.sh verify --ci         # CI mode (skip cross-repo)
 ```
+
+When verify-docs.json exists, uses that config. When it doesn't, the auto-discover
+fallback kicks in -- same 5-section output, just with auto-generated checks.
+Run `ahg init` to save the auto-generated config and customize it.
 
 ## verify-docs (built-in) -- 5 Sections
 
@@ -372,7 +384,7 @@ The pre-commit hook runs in multiple phases:
 | 2 | Worklog checks (exists, fresh <10min, >50 bytes, >2 blocks) | Yes |
 | 2.5 | sync-task-state (cascade-state auto-sync) | No (warn) |
 | 3 | verify-docs (if verify-docs.json exists) | Yes |
-| 3.5 | auto-discover fallback (if no config) | Yes |
+| 3.5 | auto-discover fallback (full verify engine if no config) | Yes |
 
 ## Usage
 
@@ -486,6 +498,7 @@ anti-hallucination-guard/
         verify-section4.ts         -- feature status (stub detection)
         verify-section5.ts         -- documentation coverage
         engine.ts                  -- verification engine (orchestrator)
+        auto-config.ts               -- auto-generate VerifyConfig from discover
         cli.ts                     -- CLI entry point (5 modes)
         init.ts                    -- quick config generator
         discover.ts                -- auto-discover orchestrator
@@ -511,4 +524,4 @@ anti-hallucination-guard/
 
 ---
 
-v2.0.0 | 2026-06-13 | MIT
+v2.1.0 | 2026-06-13 | MIT

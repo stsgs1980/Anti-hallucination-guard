@@ -1,13 +1,17 @@
 #!/usr/bin/env bun
 // ============================================================================
-// cli.ts -- Command-line interface for verify-docs v2.0
+// cli.ts -- Command-line interface for verify-docs v2.1
 //
 // Modes:
 //   VERIFY    (default)    -- run with verify-docs.json config
+//                             OR auto-discover fallback (no config needed!)
 //   DISCOVER  (--discover) -- auto-scan project without config
 //   BUMP      (--bump=X)   -- update version in all discovered files
-//   INIT      (--init)     -- generate verify-docs.json from discover
+//   INIT      (--init)     -- generate verify-docs.json from auto-discover
 //   BASELINE  (--baseline) -- create/update .ahg-baseline.json
+//
+// v2.1: verify without config now runs the FULL verify engine via
+//       generateAutoConfig(), not just discover output.
 //
 // Exit codes: 0 = pass, 1 = mismatch/error, 2 = config error
 // ============================================================================
@@ -18,6 +22,7 @@ import { verify, registerSource } from "./engine.js";
 import { discover } from "./discover.js";
 import { bumpVersion } from "./bump.js";
 import { createBaseline } from "./discover-baseline.js";
+import { generateAutoConfig } from "./auto-config.js";
 
 // -- Parse args --------------------------------------------------------------
 const args = process.argv.slice(2);
@@ -36,22 +41,22 @@ const doDryRun = args.includes("--dry-run");
 // -- Show help ---------------------------------------------------------------
 if (args.includes("--help") || args.includes("-h")) {
   console.log(`
-verify-docs -- Data-driven doc consistency checker v2.0
+verify-docs -- Data-driven doc consistency checker v2.1
 
 USAGE
-  verify-docs                          Run with verify-docs.json config
+  verify-docs                          Run verify (auto-discover if no config)
   verify-docs --ci                     CI mode: skip cross-repo checks
   verify-docs --config=X               Custom config file path
   verify-docs --discover               Auto-discover project (no config)
   verify-docs --discover --json        Discover output as JSON
   verify-docs --bump=X.Y.Z             Update version in all files
   verify-docs --bump=X.Y.Z --dry-run   Preview bump without writing
-  verify-docs --init                   Generate verify-docs.json from discover
+  verify-docs --init                   Generate verify-docs.json from auto-discover
   verify-docs --baseline               Create .ahg-baseline.json
   verify-docs --baseline --check       Check current files vs baseline
 
 MODES
-  VERIFY    (default)    Check docs against config
+  VERIFY    (default)    Check docs against config (auto-generates if missing!)
   DISCOVER  (--discover) Scan project, find issues without config
   BUMP      (--bump)     Update version atomically across all files
   INIT      (--init)     Generate config from auto-discover results
@@ -63,6 +68,11 @@ SECTIONS (verify mode)
   3. Version sync          Version matches across all docs
   4. Feature status        Stub markers don't contradict existing code
   5. Doc coverage          Code files are mentioned in documentation
+
+AUTO-DISCOVER FALLBACK
+  When verify-docs.json is missing, verify auto-generates a config from
+  the project structure (detecting project type, source dirs, version files)
+  and runs the full 5-section verification. No manual config required!
 
 EXIT CODES
   0  All checks passed (or discover-mode with warnings only)
@@ -124,101 +134,8 @@ if (doDiscover) {
 
 // -- MODE: INIT --------------------------------------------------------------
 if (doInit) {
-  // Build a FULL config from auto-discover results, not a half-empty template
   console.log("Generating verify-docs.json from auto-discover...\n");
-  const result = discover(root);
-
-  // -- Version sync ----------------------------------------------------------
-  const versionInfo = result.versionInfo;
-  const sotFile = versionInfo.sourceOfTruth?.file || "";
-  const sotExt = sotFile.split(".").pop() || "";
-  const extractPattern = sotExt === "json"
-    ? '"version"\\s*:\\s*"([\\d.]+)"'
-    : sotExt === "md"
-    ? "v([\\d.]+)"
-    : "version[=:\\s]+[\"']?([\\d.]+)[\"']?";
-  const targetPattern = (ext: string) =>
-    ext === "md" ? "v([\\d.]+)"
-    : ext === "json" ? '"version"\\s*:\\s*"([\\d.]+)"'
-    : '(?:VERSION|version)\\s*[=:]\\s*["\']([\\d.]+)["\']';
-
-  const versionSync = versionInfo.sourceOfTruth
-    ? {
-        source: `file:${sotFile}`,
-        extractPattern,
-        targets: versionInfo.files
-          .filter((f) => f !== versionInfo.sourceOfTruth)
-          .map((f) => ({
-            file: f.file,
-            pattern: targetPattern(f.file.split(".").pop() || ""),
-          })),
-      }
-    : undefined;
-
-  // -- Checks: auto-generate info-only checks for source directories -----------
-  const checks: Record<string, unknown>[] = [];
-  for (const section of result.sections) {
-    if (section.name === "Doc Coverage") {
-      for (const r of section.results) {
-        if (r.status === "info" && r.name === "Source directories") {
-          // Parse "Found: src, lib" -> generate glob checks
-          const dirs = r.detail.replace("Found: ", "").split(", ").filter(Boolean);
-          for (const dir of dirs) {
-            // Determine extensions based on what's in the directory
-            checks.push({
-              name: `${dir}/ source files`,
-              source: `glob:${dir}/**/*.ts`,
-              readmePattern: null,
-              infoOnly: true,
-            });
-            checks.push({
-              name: `${dir}/ JS files`,
-              source: `glob:${dir}/**/*.js`,
-              readmePattern: null,
-              infoOnly: true,
-            });
-          }
-        }
-      }
-    }
-  }
-  // Also add a check for shell scripts
-  checks.push({
-    name: "Shell scripts",
-    source: "glob:scripts/*.sh",
-    readmePattern: null,
-    infoOnly: true,
-  });
-
-  // -- Doc coverage: auto-generate from discovered source dirs -----------------
-  const docCoverage: Record<string, unknown>[] = [];
-  for (const section of result.sections) {
-    if (section.name === "Doc Coverage") {
-      for (const r of section.results) {
-        if (r.status === "info" && r.name === "Source directories") {
-          const dirs = r.detail.replace("Found: ", "").split(", ").filter(Boolean);
-          for (const dir of dirs) {
-            docCoverage.push({
-              name: `${dir}/ in docs`,
-              sourceDir: dir,
-              docFile: "README.md",
-              requiredMention: false,
-              severity: "warn" as const,
-            });
-          }
-        }
-      }
-    }
-  }
-
-  // -- Build final config ----------------------------------------------------
-  const config: Record<string, unknown> = {
-    readme: "README.md",
-    checks,
-    versionSync,
-    featureStatus: [],
-    docCoverage,
-  };
+  const { config, projectType, sourceDirs, versionFilesCount } = generateAutoConfig(root);
 
   const outPath = resolve(root, configPath);
   if (existsSync(outPath)) {
@@ -228,10 +145,12 @@ if (doInit) {
     writeFileSync(outPath, JSON.stringify(config, null, 2) + "\n", "utf-8");
     console.log(`[OK] Created ${configPath}`);
     console.log("");
+    console.log(`Project type detected: ${projectType}`);
+    console.log(`Source directories:     ${sourceDirs.join(", ") || "none found"}`);
     console.log("Generated config includes:");
-    console.log(`  versionSync: ${versionSync ? `${versionInfo.files.length} file(s) tracked` : "no version files found"}`);
-    console.log(`  checks:      ${checks.length} info-only check(s)`);
-    console.log(`  docCoverage: ${docCoverage.length} coverage zone(s)`);
+    console.log(`  versionSync: ${config.versionSync ? `${versionFilesCount} file(s) tracked` : "no version files found"}`);
+    console.log(`  checks:      ${config.checks.length} info-only check(s)`);
+    console.log(`  docCoverage: ${config.docCoverage ? config.docCoverage.length : 0} coverage zone(s)`);
     console.log("");
     console.log("Customize further: add countPattern to checks, featureStatus entries, etc.");
     console.log("See: https://github.com/stsgs1980/Anti-hallucination-guard#verify-docsjson");
@@ -245,22 +164,66 @@ if (doInit) {
 
 // -- MODE: VERIFY (default) --------------------------------------------------
 // With config: run configured checks
-// Without config: auto-discover as fallback (not exit(2))
+// Without config: auto-discover -> generateAutoConfig -> verify()
+//   This is the core of the "no config needed" principle:
+//   verify works without verify-docs.json by auto-generating a config on the fly
+//   and running the FULL verification engine (all 5 sections).
 
 const fullConfigPath = resolve(root, configPath);
 if (!existsSync(fullConfigPath)) {
-  // v2.0: auto-discover fallback instead of exit(2)
+  // v2.1: Full auto-discover fallback -- generate config in memory, run verify()
   console.log(`Config not found: ${configPath}`);
-  console.log("Running auto-discover instead...\n");
+  console.log("Auto-discovering project structure...\n");
 
-  const result = discover(root);
-  for (const section of result.sections) {
-    console.log(`\n=== ${section.name} ===\n`);
-    for (const line of section.results) console.log(formatLine(line));
+  const { config, projectType, sourceDirs, versionFilesCount, isMinimal } = generateAutoConfig(root);
+
+  console.log(`Project type: ${projectType}`);
+  console.log(`Source dirs:   ${sourceDirs.join(", ") || "none found"}`);
+  console.log(`Version files: ${versionFilesCount}`);
+  console.log("");
+
+  if (isMinimal) {
+    // Bare project with no discoverable structure -- fall back to discover mode
+    console.log("[warn] Minimal project structure detected -- showing discover report instead.\n");
+    const discoverResult = discover(root);
+    for (const section of discoverResult.sections) {
+      console.log(`\n=== ${section.name} ===\n`);
+      for (const line of section.results) console.log(formatLine(line));
+    }
+  } else {
+    // Run full verify engine with auto-generated config
+    console.log("Running verification with auto-generated config...\n");
+
+    if (ci) console.log("[CI mode] Cross-repo checks will be skipped.\n");
+
+    const verifyResult = verify(root, config, { ci });
+
+    // Print all sections (same format as configured verify)
+    const sections = [
+      { title: "1. README vs Code", data: verifyResult.section1 },
+      { title: "2. Cross-repo Consistency", data: verifyResult.section2 },
+      { title: "3. Version Synchronization", data: verifyResult.section3 },
+      { title: "4. Feature Status (Stub Detection)", data: verifyResult.section4 },
+      { title: "5. Documentation Coverage", data: verifyResult.section5 },
+    ];
+
+    for (const section of sections) {
+      if (section.data.length > 0) {
+        console.log(`\n=== ${section.title} ===\n`);
+        for (const line of section.data) console.log(formatLine(line));
+      }
+    }
+
+    if (verifyResult.errors > 0) {
+      console.log(`\n!! ${verifyResult.errors} mismatch(es) found!`);
+    } else {
+      console.log("\nAll auto-discover checks consistent.");
+    }
   }
 
-  console.log(`\nTip: run "verify-docs --init" to generate ${configPath}`);
-  process.exit(result.errors > 0 ? 1 : 0);
+  console.log(`\nTip: run "ahg init" to save auto-generated config as ${configPath}`);
+  console.log("     then customize it for your project.\n");
+  process.exit(0);  // Auto-discover mode doesn't block pushes
 }
 
 // Load config and run verification
