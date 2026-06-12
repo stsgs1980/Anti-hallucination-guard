@@ -1,3 +1,4 @@
+<!-- ID: RULE-001 | ver:1.0 | Level: C | Related: RULE-003, RULE-006 -->
 ## Rule 1: worklog -- BEFORE and AFTER every action
 
 - Before ANY action: read /worklog.md
@@ -5,18 +6,21 @@
 - Format: only blocks with --- separator
 - Content: specific facts (files, commands, results)
 
+<!-- ID: RULE-002 | ver:1.0 | Level: C | Related: RULE-009 -->
 ## Rule 2: Read before write (READ BEFORE WRITE)
 
 - NEVER write a file without reading it first (Read tool)
 - Exception: if file does not exist (verify via LS/Glob)
 - Reason: without reading, agent risks destroying existing code
 
+<!-- ID: RULE-003 | ver:1.0 | Level: C | Related: RULE-001 -->
 ## Rule 3: One logical block -- one commit
 
 - Finished a meaningful chunk of work -> git add -A && git commit
 - Commit message: specific description (not "update", not "fix")
 - Commit without updated worklog -> ERROR (pre-commit hook will block)
 
+<!-- ID: RULE-004 | ver:1.0 | Level: C | Related: RULE-005 -->
 ## Rule 4: No loops
 
 - If you are doing the same thing for the 3rd time with the same result -> STOP
@@ -24,6 +28,7 @@
 - Write in chat: "Stuck on [specific step], need help"
 - This is NOT a failure -- this saves user time
 
+<!-- ID: RULE-005 | ver:1.0 | Level: C | Related: RULE-010 -->
 ## Rule 5: Honest reporting
 
 - Do NOT write "work completed" if tests are not passed
@@ -31,6 +36,7 @@
 - Do NOT write "error fixed" if you did not verify
 - Every claim -> must be verifiable
 
+<!-- ID: RULE-006 | ver:1.0 | Level: W | Related: RULE-001, RULE-003 -->
 ## Rule 6: Work structure
 
 1. Read AGENT_RULES.md and worklog.md
@@ -40,6 +46,7 @@
 5. Git commit
 6. Go to step 2
 
+<!-- ID: RULE-007 | ver:1.0 | Level: C | Related: STD-ENV-001, STD-ENV-002 -->
 ## Rule 7: Sandbox verification (no fake setup)
 
 Agents MUST verify sandbox infrastructure is real before proceeding. Known anti-hallucination patterns in Z.ai Sandbox:
@@ -52,6 +59,7 @@ Agents MUST verify sandbox infrastructure is real before proceeding. Known anti-
 
 4. **Editing wrong location is silent failure**: Writing to `/tmp/my-repo/src/app/page.tsx` changes NOTHING visible in the browser. Always confirm you are editing files under `/home/z/my-project/`.
 
+<!-- ID: RULE-008 | ver:1.0 | Level: C | Related: RULE-009, TOOL-VERIFY -->
 ## Rule 8: Session Start Protocol (drift prevention)
 
 Before ANY work in a new session, the agent MUST:
@@ -72,6 +80,7 @@ This rule prevents the most common documentation decay pattern:
 an agent writes code but does not update docs, causing documentation
 to gradually become misleading and unreliable.
 
+<!-- ID: RULE-009 | ver:1.0 | Level: C | Related: RULE-008, TOOL-VERIFY -->
 ## Rule 9: Documentation sync (no code without docs)
 
 When changing the codebase, documentation MUST be kept in sync:
@@ -89,6 +98,7 @@ Pre-commit checklist:
 - [ ] task state file statuses are current?
 - [ ] verify-docs passes without errors?
 
+<!-- ID: RULE-010 | ver:1.0 | Level: C | Related: RULE-005, PROC-SETUP -->
 ## Rule 10: Integrity protection (no self-sabotage)
 
 Agents MUST NOT disable, bypass, or weaken the anti-hallucination mechanisms.
@@ -115,6 +125,7 @@ This rule is non-negotiable and applies regardless of task urgency.
 - audit.sh scores integrity as part of session quality
 - CI pipeline runs verify-docs independently (cannot be bypassed locally)
 
+<!-- ID: RULE-011 | ver:1.0 | Level: C | Related: RULE-003 -->
 ## Rule 11: Anti-monolith (no file over 250 lines)
 
 Every file MUST stay under 250 lines. When a file crosses this threshold,
@@ -148,6 +159,7 @@ the agent MUST stop writing, split the file, and continue with smaller modules.
 - "I'll refactor later" (later never comes)
 - "It's easier to read in one file" (that's what imports are for)
 
+<!-- ID: RULE-012 | ver:1.1 | Level: C | Related: TOOL-BUMP -->
 ## Rule 12: Use ahg bump for version updates
 
 When changing the project version, use the atomic bump command:
@@ -163,6 +175,7 @@ Do NOT update versions manually in individual files.
 Manual updates cause version drift -- one file gets updated,
 another is forgotten. ahg bump eliminates this class of errors.
 
+<!-- ID: RULE-013 | ver:1.1 | Level: C | Related: RULE-001, RULE-003, TOOL-VERIFY -->
 ## Rule 13: Pre-commit mandatory checklist
 
 Before EVERY commit, verify ALL of these items:
@@ -177,6 +190,7 @@ Before EVERY commit, verify ALL of these items:
 If ANY item is unclear: run "bash scripts/ahg.sh discover" first.
 Do NOT commit with known documentation drift.
 
+<!-- ID: RULE-014 | ver:1.0 | Level: W | Related: -->
 ## Rule 14: No Unicode graphics (UNICODE_POLICY compliance)
 
 All AHG output must comply with No-Unicode Policy v2.1.

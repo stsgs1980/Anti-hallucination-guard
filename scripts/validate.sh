@@ -28,6 +28,8 @@ ALLOWED=(
     "update.sh"
     "AGENT_RULES.md"
     "README.md"
+    "CHANGELOG.md"
+    "registry.json"
     ".gitignore"
     ".git-hooks/"
     ".git-hooks/pre-commit"

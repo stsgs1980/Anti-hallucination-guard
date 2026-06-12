@@ -271,6 +271,70 @@ bash scripts/ahg.sh baseline           # create baseline
 bash scripts/ahg.sh baseline --check   # check for deleted files
 ```
 
+## ID system (registry.json + cascade-state.json)
+
+Every addressable entity in AHG has a unique ID. This enables consumer
+projects to understand what changed between updates at a granular level,
+rather than seeing only "something changed."
+
+### ID format
+
+| Prefix | Type | Example |
+|--------|------|---------|
+| `RULE` | Agent rule in AGENT_RULES.md | RULE-011 (anti-monolith) |
+| `STD` | Standard / procedure | STD-ENV-002 (sandbox rules) |
+| `TOOL` | Tool / engine | TOOL-VERIFY (verify-docs) |
+| `PROC` | Process / script | PROC-UPDATE (update.sh) |
+
+### ID comments in documents
+
+Each rule in AGENT_RULES.md is annotated with an HTML comment containing
+its ID, version, severity level, and related IDs:
+
+```html
+<!-- ID: RULE-011 | ver:1.0 | Level: C | Related: RULE-003 -->
+## Rule 11: Anti-monolith (no file over 250 lines)
+```
+
+These comments are grep-able (`grep "ID: RULE-011"`) and do not affect
+markdown rendering.
+
+### registry.json
+
+The single source of truth for all IDs. Contains file path, markdown anchor,
+version, severity level, and related IDs for each entry. Used by:
+
+- `update.sh` to generate cascade-state.json
+- `verify-docs` to validate ID references
+- Consumer project CI to check for breaking changes
+
+### cascade-state.json (auto-generated)
+
+When a consumer project runs `update.sh`, a `cascade-state.json` is generated
+in the project root. This file records:
+
+```json
+{
+  "ahgVersion": "2.1.0",
+  "previousVersion": "2.0.0",
+  "previousCommit": "abc1234",
+  "currentCommit": "fd686cb",
+  "updatedAt": "2026-06-13T12:00:00Z",
+  "changedFiles": "AGENT_RULES.md tools/verify-docs/src/auto-config.ts",
+  "items": [
+    { "id": "RULE-011", "version": "1.0", "level": "critical", "status": "active" }
+  ],
+  "changedSinceLastUpdate": [
+    { "id": "TOOL-VERIFY", "from": "2.0", "to": "2.1", "breaking": true }
+  ]
+}
+```
+
+This enables the consumer project to answer:
+- Which AHG items changed since the last update?
+- Are any of the changes breaking (critical level)?
+- Which specific IDs are affected?
+
 ## sync-task-state.sh
 
 Automatically updates task statuses in JSON state files (cascade-state.json
@@ -459,7 +523,7 @@ rm -r anti-hallucination-guard/
 ```
 anti-hallucination-guard/
   setup.sh                          -- project installer (thin orchestrator)
-  update.sh                         -- pull + reinstall + commit reminder
+  update.sh                         -- pull + reinstall + cascade-state.json + commit reminder
   setup/                            -- modular setup steps
     _lib.sh                        -- shared variables and logging functions
     01-deploy-agent-rules.sh       -- AGENT_RULES.md marker merge
@@ -471,7 +535,9 @@ anti-hallucination-guard/
     07-install-verify-docs.sh       -- README checker (optional, needs bun)
     08-integrate-cascade-guard.sh  -- cascade-state.json freshness
     09-git-staging.sh              -- git add installed files
-  AGENT_RULES.md                    -- agent rules template (14 rules)
+  CHANGELOG.md                       -- version history (Keep a Changelog format)
+  registry.json                      -- ID registry for all addressable entities
+  AGENT_RULES.md                    -- agent rules template (14 rules, with ID comments)
   .git-hooks/
     pre-commit                      -- pre-commit hook (5 phases)
     pre-push                        -- pre-push hook (foreign file protection)

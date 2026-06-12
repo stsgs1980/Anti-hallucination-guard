@@ -1,0 +1,183 @@
+{
+  "version": "2.1.0",
+  "updated": "2026-06-13",
+  "description": "ID registry for anti-hallucination-guard. Each entry is an addressable entity that consumer projects may depend on.",
+  "items": {
+    "RULE-001": {
+      "file": "AGENT_RULES.md",
+      "anchor": "rule-1-worklog--before-and-after-every-action",
+      "title": "worklog -- BEFORE and AFTER every action",
+      "version": "1.0",
+      "level": "critical",
+      "related": ["RULE-003", "RULE-006"]
+    },
+    "RULE-002": {
+      "file": "AGENT_RULES.md",
+      "anchor": "rule-2-read-before-write-read-before-write",
+      "title": "Read before write",
+      "version": "1.0",
+      "level": "critical",
+      "related": ["RULE-009"]
+    },
+    "RULE-003": {
+      "file": "AGENT_RULES.md",
+      "anchor": "rule-3-one-logical-block----one-commit",
+      "title": "One logical block -- one commit",
+      "version": "1.0",
+      "level": "critical",
+      "related": ["RULE-001"]
+    },
+    "RULE-004": {
+      "file": "AGENT_RULES.md",
+      "anchor": "rule-4-no-loops",
+      "title": "No loops",
+      "version": "1.0",
+      "level": "critical",
+      "related": ["RULE-005"]
+    },
+    "RULE-005": {
+      "file": "AGENT_RULES.md",
+      "anchor": "rule-5-honest-reporting",
+      "title": "Honest reporting",
+      "version": "1.0",
+      "level": "critical",
+      "related": ["RULE-010"]
+    },
+    "RULE-006": {
+      "file": "AGENT_RULES.md",
+      "anchor": "rule-6-work-structure",
+      "title": "Work structure",
+      "version": "1.0",
+      "level": "warning",
+      "related": ["RULE-001", "RULE-003"]
+    },
+    "RULE-007": {
+      "file": "AGENT_RULES.md",
+      "anchor": "rule-7-sandbox-verification-no-fake-setup",
+      "title": "Sandbox verification (no fake setup)",
+      "version": "1.0",
+      "level": "critical",
+      "related": ["STD-ENV-001", "STD-ENV-002"]
+    },
+    "RULE-008": {
+      "file": "AGENT_RULES.md",
+      "anchor": "rule-8-session-start-protocol-drift-prevention",
+      "title": "Session Start Protocol (drift prevention)",
+      "version": "1.0",
+      "level": "critical",
+      "related": ["RULE-009", "TOOL-VERIFY"]
+    },
+    "RULE-009": {
+      "file": "AGENT_RULES.md",
+      "anchor": "rule-9-documentation-sync-no-code-without-docs",
+      "title": "Documentation sync (no code without docs)",
+      "version": "1.0",
+      "level": "critical",
+      "related": ["RULE-008", "TOOL-VERIFY"]
+    },
+    "RULE-010": {
+      "file": "AGENT_RULES.md",
+      "anchor": "rule-10-integrity-protection-no-self-sabotage",
+      "title": "Integrity protection (no self-sabotage)",
+      "version": "1.0",
+      "level": "critical",
+      "related": ["RULE-005", "PROC-SETUP"]
+    },
+    "RULE-011": {
+      "file": "AGENT_RULES.md",
+      "anchor": "rule-11-anti-monolith-no-file-over-250-lines",
+      "title": "Anti-monolith (no file over 250 lines)",
+      "version": "1.0",
+      "level": "critical",
+      "related": ["RULE-003"]
+    },
+    "RULE-012": {
+      "file": "AGENT_RULES.md",
+      "anchor": "rule-12-use-ahg-bump-for-version-updates",
+      "title": "Use ahg bump for version updates",
+      "version": "1.1",
+      "level": "critical",
+      "related": ["TOOL-BUMP"]
+    },
+    "RULE-013": {
+      "file": "AGENT_RULES.md",
+      "anchor": "rule-13-pre-commit-mandatory-checklist",
+      "title": "Pre-commit mandatory checklist",
+      "version": "1.1",
+      "level": "critical",
+      "related": ["RULE-001", "RULE-003", "TOOL-VERIFY"]
+    },
+    "RULE-014": {
+      "file": "AGENT_RULES.md",
+      "anchor": "rule-14-no-unicode-graphics-unicode_policy-compliance",
+      "title": "No Unicode graphics (UNICODE_POLICY compliance)",
+      "version": "1.0",
+      "level": "warning",
+      "related": []
+    },
+    "STD-ENV-001": {
+      "file": "AGENT_RULES.md",
+      "anchor": "rule-7-sandbox-verification-no-fake-setup",
+      "title": "Reproducibility standard",
+      "version": "1.0",
+      "level": "critical",
+      "related": ["STD-ENV-002"]
+    },
+    "STD-ENV-002": {
+      "file": "AGENT_RULES.md",
+      "anchor": "rule-7-sandbox-verification-no-fake-setup",
+      "title": "Sandbox rules standard",
+      "version": "1.0",
+      "level": "critical",
+      "related": ["STD-ENV-001"]
+    },
+    "TOOL-VERIFY": {
+      "file": "tools/verify-docs/src/cli.ts",
+      "anchor": "",
+      "title": "verify-docs engine (5 sections + auto-discover)",
+      "version": "2.1",
+      "level": "critical",
+      "related": ["TOOL-BUMP", "TOOL-DISCOVER"]
+    },
+    "TOOL-BUMP": {
+      "file": "tools/verify-docs/src/bump.ts",
+      "anchor": "",
+      "title": "Atomic version bump",
+      "version": "2.0",
+      "level": "critical",
+      "related": ["TOOL-VERIFY"]
+    },
+    "TOOL-DISCOVER": {
+      "file": "tools/verify-docs/src/discover.ts",
+      "anchor": "",
+      "title": "Auto-discover (version files, coverage, baseline)",
+      "version": "2.1",
+      "level": "critical",
+      "related": ["TOOL-VERIFY"]
+    },
+    "PROC-SETUP": {
+      "file": "setup.sh",
+      "anchor": "",
+      "title": "Project installer (9 steps)",
+      "version": "2.0",
+      "level": "critical",
+      "related": ["PROC-UPDATE"]
+    },
+    "PROC-UPDATE": {
+      "file": "update.sh",
+      "anchor": "",
+      "title": "Submodule pull + reinstall",
+      "version": "2.1",
+      "level": "critical",
+      "related": ["PROC-SETUP"]
+    },
+    "PROC-VALIDATE": {
+      "file": "scripts/validate.sh",
+      "anchor": "",
+      "title": "Repository purity + Unicode policy checker",
+      "version": "2.0",
+      "level": "warning",
+      "related": []
+    }
+  }
+}
