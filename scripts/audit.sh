@@ -3,7 +3,10 @@
 # Post-session agent audit.
 # Run: bash scripts/audit.sh
 
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MODULE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# Resolve PROJECT_ROOT: if AHG is a submodule, git toplevel = consumer root
+PROJECT_ROOT="$(git -C "$MODULE_ROOT" rev-parse --show-toplevel 2>/dev/null || echo "$MODULE_ROOT")"
 WORKLOG="$PROJECT_ROOT/worklog.md"
 REPORT="$PROJECT_ROOT/download/audit-report.txt"
 SCORE=0
