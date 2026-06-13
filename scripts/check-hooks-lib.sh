@@ -20,7 +20,10 @@ _AHG_LIB_LOADED=1
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# MODULE_ROOT is always where this script lives (the AHG submodule/package)
+# Initial MODULE_ROOT: where this script lives (one level up from scripts/).
+# NOTE: When deployed to a consumer project's scripts/ dir, this resolves
+# to the consumer project root, NOT the AHG module. detect_module() below
+# will fix this.
 _MODULE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Resolve PROJECT_ROOT: if AHG is a submodule, git toplevel = consumer root
 PROJECT_ROOT="$(git -C "$_MODULE_DIR" rev-parse --show-toplevel 2>/dev/null || echo "$_MODULE_DIR")"
@@ -52,6 +55,7 @@ detect_module() {
     "$PROJECT_ROOT/anti-hallucination-guard"
     "$PROJECT_ROOT/scripts/anti-hallucination-guard"
     "$PROJECT_ROOT/vendor/anti-hallucination-guard"
+    "$PROJECT_ROOT/lib/anti-hallucination-guard"
   )
   for dir in "${candidates[@]}"; do
     if [ -d "$dir" ] && [ -f "$dir/setup.sh" ]; then
@@ -71,6 +75,14 @@ detect_module() {
   fi
   return 1
 }
+
+# -- Auto-detect module at source time ---------------------------------------
+# This ensures MODULE_ROOT is correct immediately after sourcing this library,
+# without requiring each caller to remember to call detect_module().
+# The function is still available for explicit re-detection if needed.
+if [ ! -f "$MODULE_ROOT/setup.sh" ]; then
+    detect_module || true  # Non-fatal: some callers handle the error themselves
+fi
 
 # -- Compute SHA256 fingerprint -----------------------------------------------
 fingerprint() {
