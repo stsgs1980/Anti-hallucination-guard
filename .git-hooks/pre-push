@@ -24,6 +24,21 @@ if [ -f "$MODULE_DIR/setup.sh" ] && [ -f "$MODULE_DIR/AGENT_RULES.md" ] && [ -f 
             exit 1
         fi
     fi
+
+    # Submodule safety: BLOCK push from inside a consumer project
+    # (i.e., someone cd'd into the submodule and is pushing back to AHG)
+    # Only allow if AHG_MODULE_PUSH=1 is set (explicit opt-in by maintainer)
+    if [ -f "$MODULE_DIR/../.gitmodules" ] || [ -d "$MODULE_DIR/../.git/modules" ]; then
+        if [ "${AHG_MODULE_PUSH:-}" != "1" ]; then
+            echo ""
+            echo "BLOCKED: Pushing from inside a git submodule."
+            echo "  Consumer projects must NOT push to the AHG module."
+            echo "  If you are the maintainer, set AHG_MODULE_PUSH=1:"
+            echo "    AHG_MODULE_PUSH=1 git push"
+            echo ""
+            exit 1
+        fi
+    fi
 else
     # We are in a target project -- run doc consistency check instead
     AHG_SH="$SCRIPTS_DIR/ahg.sh"
