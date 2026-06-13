@@ -293,7 +293,7 @@ rather than seeing only "something changed."
 
 | Prefix | Type | Example |
 |--------|------|---------|
-| `RULE` | Agent rule in AGENT_RULES.md | RULE-011 (anti-monolith) |
+| `RULE` | Agent rule in AGENT_RULES.md | RULE-012 (anti-monolith) |
 | `STD` | Standard / procedure | STD-ENV-002 (sandbox rules) |
 | `TOOL` | Tool / engine | TOOL-VERIFY (verify-docs) |
 | `PROC` | Process / script | PROC-UPDATE (update.sh) |

@@ -112,6 +112,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Rule 16 (RULE-016): AHG submodule is immutable architecture -- agents
+  MUST NOT propose or execute removal, inlining, or restructuring
+  of the AHG git submodule relationship
+- .git-hooks directory: added to module for pre-commit, pre-push,
+  and post-checkout hook templates
+- validate.sh: added .git-hooks directory to whitelist
+
+### Changed
+
+- Rule 11 (RULE-011): expanded forbidden actions list with explicit
+  examples (core.hooksPath bypass, fake worklog entries)
+- validate.sh: improved context detection (submodule vs standalone)
+
 ## [2.1.0] - 2026-06-13
 
 ### Added

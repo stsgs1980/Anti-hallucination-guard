@@ -81,7 +81,7 @@ Create /worklog.md in project root if not exists.
 
 ### Step 3: Setup pre-commit hook
 
-Create .git/hooks/pre-commit from .git-hooks/pre-commit. Five phases:
+Create .git/hooks/pre-commit from .git-hooks/pre-commit. Seven phases:
 1. Integrity check (core.hooksPath detection, self-check)
 2. Worklog checks (exists, fresh <10min, >50 bytes, >2 blocks)
 2.5. sync-task-state (cascade-state auto-sync, non-blocking)

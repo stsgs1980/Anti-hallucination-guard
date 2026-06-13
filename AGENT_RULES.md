@@ -360,7 +360,7 @@ superseded by a proper fix in PR #9.
 2. **CODEOWNERS**: Only @stsgs1980 can approve changes (requires GitHub
    branch protection with "Require review from Code Owners")
 3. **pr-guard.yml workflow**: CI-level check that blocks PRs from forks,
-   non-collaborators, and tampering attempts (removing Rule 16/16 or CODEOWNERS)
+   non-collaborators, and tampering attempts (removing Rule 16/17 or CODEOWNERS)
 4. **validate.sh**: Blocks push from inside submodule unless AHG_MODULE_PUSH=1
 5. **GitHub branch protection**: Must be configured by owner (see below)
 
