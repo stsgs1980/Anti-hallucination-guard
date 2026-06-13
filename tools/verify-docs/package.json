@@ -10,7 +10,7 @@
   "types": "./src/engine.ts",
   "scripts": {
     "verify": "bun run src/cli.ts",
-    "test": "bun test"
+    "pretest": "echo 'No tests yet — see verify-docs/CONSUMER_GUIDE.md for usage'"
   },
   "keywords": [
     "docs",

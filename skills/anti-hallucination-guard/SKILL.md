@@ -1,7 +1,7 @@
 <!-- ANTI-MONOLITH exception: Z.ai skill definition must be a single self-contained
      document for the skill loader. Splitting would break the skill activation system.
      Per Rule 12. -->
-# Anti-Hallucination Guard v2.5
+# Anti-Hallucination Guard v2.5.0
 
 > Auto-activate on session start. Setup.sh merges rules into AGENT_RULES.md with markers.
 > Compatible with cascade-guard: Rule 1-17 (AHG) + Rule C-1..C-9 (Cascade) coexist.
