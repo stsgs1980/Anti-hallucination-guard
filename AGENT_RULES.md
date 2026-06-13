@@ -168,7 +168,7 @@ This rule is non-negotiable and applies regardless of task urgency.
 - NEVER remove the guard mechanisms
 
 **Detection:**
-- check-hooks-integrity.sh compares fingerprints of hooks and configs
+- check-hooks-snapshot.sh + check-hooks-verify.sh compare fingerprints of hooks and configs
 - verify-docs detects missing or weakened checks
 - audit.sh scores integrity as part of session quality
 - CI pipeline runs verify-docs independently (cannot be bypassed locally)
@@ -266,7 +266,7 @@ No emoji, no Unicode pictograms, no decorative symbols.
 - AI-agent chat responses: [W] Warning
 - Documentation (.md): regulated by MARKDOWN_STANDARD v2.1
 
-<!-- ID: RULE-016 | ver:1.0 | Level: C | Related: RULE-011, ARCH-SUBMODULE -->
+<!-- ID: RULE-016 | ver:1.0 | Level: C | Related: RULE-011 -->
 ## Rule 16 [C]: AHG submodule is immutable architecture (no removal, no inlining)
 
 The anti-hallucination-guard git submodule is a structural component of this
@@ -316,7 +316,7 @@ action that removes, inlines, or restructures the AHG submodule relationship.
 **The submodule is not causing problems -- bugs in context detection were.
 Those bugs are fixed in the AHG repo. Update the submodule to get fixes.**
 
-<!-- ID: RULE-017 | ver:1.0 | Level: C | Related: RULE-011, RULE-016, ARCH-UPSTREAM -->
+<!-- ID: RULE-017 | ver:1.0 | Level: C | Related: RULE-011, RULE-016 -->
 ## Rule 17 [C]: Upstream write protection (no consumer agent may push to AHG)
 
 No agent running in a consumer project context may push, merge, create PRs,

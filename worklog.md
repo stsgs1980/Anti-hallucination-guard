@@ -21,3 +21,8 @@ Stage Summary:
 Task ID: consumer-guide
 Agent: main
 Task: Test and verify CONSUMER_GUIDE.md
+
+---
+Task ID: bug-audit-fix
+Agent: main
+Task: Fix 12 bugs found in fresh audit

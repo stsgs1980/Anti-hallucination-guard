@@ -77,7 +77,11 @@ echo ""
 echo "Rule namespacing in AGENT_RULES.md:"
 echo "  Rule 1-7     = Anti-hallucination core (worklog, no-loops, honest reporting, sandbox)"
 echo "  Rule 8       = Session Start Protocol (drift prevention)"
-echo "  Rule 9       = Documentation Sync (no code without docs)"
+echo "  Rule 9-10    = Documentation sync (no code without docs, pre-commit checklist)"
+echo "  Rule 11-12   = Integrity (no self-sabotage, anti-monolith)"
+echo "  Rule 13-14   = Version management (ahg bump, pre-commit checklist)"
+echo "  Rule 15      = Unicode policy"
+echo "  Rule 16-17   = Architecture (submodule immutability, upstream write protection)"
 if [ -n "$CG_DIR" ] && [ -d "$CG_DIR" ]; then
 echo "  Rule C-1..C-9 = Cascade (deps, priorities, acceptance verification)"
 else

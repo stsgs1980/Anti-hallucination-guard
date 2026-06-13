@@ -1,6 +1,6 @@
 {
   "name": "verify-docs",
-  "version": "2.0.0",
+  "version": "2.5.0",
   "description": "Data-driven doc consistency checker. Verifies numbers in your README match the actual codebase. Works with any project.",
   "bin": {
     "verify-docs": "./src/cli.ts",
@@ -28,10 +28,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/stsgs1980/verify.git"
+    "url": "https://github.com/stsgs1980/Anti-hallucination-guard.git"
   },
   "bugs": {
-    "url": "https://github.com/stsgs1980/verify/issues"
+    "url": "https://github.com/stsgs1980/Anti-hallucination-guard/issues"
   },
   "engines": {
     "bun": ">=1.0.0"

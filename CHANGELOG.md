@@ -5,16 +5,44 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [2.5.0] - 2026-06-14
 
+### Added
+
+- update.sh: version self-check (compares local version with GitHub releases,
+  timeout 5s, non-blocking if offline)
+- update.sh: auto-commit submodule pointer after update (detects changed
+  pointer, commits with `chore: update anti-hallucination-guard -> HASH`)
+- .ahgrc: JSON config file for line-check settings (line_check_limit,
+  line_check_hard_cap, line_check_dir, line_check_glob, line_check_skip)
+- .git-hooks/post-checkout: detects stale hooks after submodule update by
+  comparing commit hash with .ahg-setup-stamp
+- setup/03: installs post-checkout hook for stale AHG detection
+- setup/05: deploys .ahgrc config to consumer projects (does not overwrite)
+- setup/07: auto-generates verify-docs.json in standalone AHG mode (skips
+  consumer projects where auto-discovery is too aggressive)
+- setup/09: writes .ahg-setup-stamp (commit hash + date) for post-checkout
+  comparison
+- scripts/line-count-check.sh: reads .ahgrc config (priority: env vars >
+  .ahgrc > defaults), supports LINE_HARD_CAP from .ahgrc
+- tools/verify-docs/CONSUMER_GUIDE.md: guide for extending verify-docs.json
+  to protect non-README documentation (WORKFLOW.md, ARCHITECTURE.md, etc.)
+- .gitignore: added !.ahgrc to whitelist
+- validate.sh: added .ahgrc and .git-hooks/post-checkout to whitelist
+
 ### Changed
 
-- AGENT_RULES.md: added H1 title, Quick Reference block (5 critical rules),
-  Table of Contents with anchor links, visual [C]/[W] severity markers in
-  rule headings (previously only in HTML ID comments), ANTI-MONOLITH exception
-  comment for line-count compliance. Removed stray "test" text.
-- registry.json: updated all anchors to match new heading format (rule-N-c/w-...).
-  Added RULE-015 and RULE-016 entries. Version bumped to 2.5.0.
-- README.md: added [C]/[W] Level column to rules table, fixed "14 rules" to
-  "17 rules" in two locations. Version bumped to 2.5.0.
+- AGENT_RULES.md: fixed dead reference check-hooks-integrity.sh -> snapshot/verify
+- AGENT_RULES.md: removed ARCH-SUBMODULE and ARCH-UPSTREAM from RULE-016/017
+  HTML comment IDs (these were never registered items)
+- registry.json: removed ARCH-SUBMODULE and ARCH-UPSTREAM from RULE-016/017
+  related fields
+- verify-docs/package.json: version 2.0.0 -> 2.5.0, fixed repo URL
+- scripts/ahg.sh: version v2.1 -> v2.5
+- README.md: added branch-protect.sh, branch-protect-lib.sh,
+  check-hooks-lib.sh, setup-branch-protection.sh, CONSUMER_GUIDE.md
+  to module structure table
+- setup.sh: summary now shows all 17 rules (was only Rule 1-9)
+- .github/CODEOWNERS: clarified "Rule 16+17" (was just "Rule 16")
+- SKILL.md: updated from "14 rules" to "17 rules", version v2.0 -> v2.5
 
 ## [2.4.0] - 2026-06-14
 

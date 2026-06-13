@@ -81,7 +81,12 @@ bash anti-hallucination-guard/setup.sh
 | `scripts/check-hooks-verify.sh` | Verify hooks/configs against snapshot (anti-tampering) |
 | `scripts/line-count-check.sh` | Enforce Rule 12: block commit if file exceeds 250 lines |
 | `scripts/co-change-check.sh` | Enforce Rule 10: warn if buddy files not in same commit |
+| `scripts/branch-protect.sh` | Branch protection orchestrator (requires `gh` CLI) |
+| `scripts/branch-protect-lib.sh` | Branch protection config + helpers |
+| `scripts/check-hooks-lib.sh` | Shared functions for hook integrity checks |
+| `scripts/setup-branch-protection.sh` | One-command GitHub branch protection setup |
 | `tools/verify-docs/` | 5-section doc consistency checker with auto-discover (requires bun) |
+| `tools/verify-docs/CONSUMER_GUIDE.md` | Guide for extending verify-docs.json in consumer projects |
 
 ## Unified CLI: ahg.sh
 

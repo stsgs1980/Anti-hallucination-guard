@@ -2,7 +2,7 @@
 # Every change to this repository requires approval from the owner.
 # No consumer project agent may approve or merge changes here.
 #
-# This file is part of the upstream write protection (Rule 16).
+# This file is part of the upstream write protection (Rule 16+17).
 # Consumer projects reference AHG as a git submodule.
 # They MUST NOT push, merge, or approve changes to this repo.
 
