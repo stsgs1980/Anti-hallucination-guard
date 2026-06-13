@@ -1,0 +1,75 @@
+{
+  "readme": "README.md",
+  "checks": [
+    {
+      "name": "scripts/*.sh files",
+      "source": "glob:scripts/*.sh",
+      "readmePattern": null,
+      "infoOnly": true
+    },
+    {
+      "name": "setup/*.sh files",
+      "source": "glob:setup/*.sh",
+      "readmePattern": null,
+      "infoOnly": true
+    },
+    {
+      "name": "verify-docs source files",
+      "source": "glob:tools/verify-docs/src/*.ts",
+      "readmePattern": null,
+      "infoOnly": true
+    },
+    {
+      "name": "Git commits",
+      "source": "git:HEAD",
+      "readmePattern": null,
+      "infoOnly": true
+    }
+  ],
+  "versionSync": {
+    "source": "file:README.md",
+    "extractPattern": "v([\\d.]+)",
+    "targets": [
+      {
+        "file": "registry.json",
+        "pattern": "\"version\"\\s*:\\s*\"([\\d.]+)\""
+      },
+      {
+        "file": ".ahg-cochange.json",
+        "pattern": "\"version\"\\s*:\\s*\"([\\d.]+)\""
+      },
+      {
+        "file": "tools/verify-docs/package.json",
+        "pattern": "\"version\"\\s*:\\s*\"([\\d.]+)\""
+      },
+      {
+        "file": "AGENT_RULES.md",
+        "pattern": "v(\\d+\\.\\d+\\.\\d+)"
+      }
+    ]
+  },
+  "featureStatus": [],
+  "docCoverage": [
+    {
+      "name": "scripts/ in docs",
+      "sourceDir": "scripts",
+      "docFile": "README.md",
+      "requiredMention": false,
+      "severity": "warn"
+    },
+    {
+      "name": "setup/ in docs",
+      "sourceDir": "setup",
+      "docFile": "README.md",
+      "requiredMention": false,
+      "severity": "warn"
+    },
+    {
+      "name": "tools/ in docs",
+      "sourceDir": "tools",
+      "docFile": "README.md",
+      "requiredMention": false,
+      "severity": "warn"
+    }
+  ]
+}

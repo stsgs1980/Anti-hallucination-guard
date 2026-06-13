@@ -1,3 +1,7 @@
+<!-- ANTI-MONOLITH exception: comprehensive reference guide covering all 5 verify-docs
+     sections with examples. Splitting by section would make it harder to use as a
+     single reference document that consumers need when configuring their projects.
+     Per Rule 12. -->
 # verify-docs: Guide for Consumer Projects
 
 This guide explains how to configure `verify-docs.json` in projects that use
@@ -23,18 +27,18 @@ checks (code vs docs). If your project has WORKFLOW.md, ARCHITECTURE.md, or
 other docs with counts, versions, or feature lists derived from code, those
 files are **not protected** by the default config. When someone adds a wiki
 page, an ESLint rule, or a model, the pre-commit hook will only catch README
-drift — not drift in other docs.
+drift -- not drift in other docs.
 
-The fix is not to change the tool — it already supports multi-doc coverage
+The fix is not to change the tool -- it already supports multi-doc coverage
 through `docCoverage`, `versionSync`, and `featureStatus`. You just need to
 configure it.
 
 **Important limitation:** Section 1 `checks` compare code counts against the
-`"readme"` file only — they cannot compare against WORKFLOW.md or other docs.
+`"readme"` file only -- they cannot compare against WORKFLOW.md or other docs.
 To protect non-README documentation, use:
-- `docCoverage` — verify that code files are mentioned in any doc file
-- `versionSync` — verify version numbers across any files
-- `featureStatus` — detect stub markers in any doc file
+- `docCoverage` -- verify that code files are mentioned in any doc file
+- `versionSync` -- verify version numbers across any files
+- `featureStatus` -- detect stub markers in any doc file
 
 ---
 
@@ -68,7 +72,7 @@ in the documentation.
 }
 ```
 
-Useful during setup — you see the real counts without blocking commits.
+Useful during setup -- you see the real counts without blocking commits.
 
 ### Count with regex pattern inside a file
 
@@ -257,7 +261,7 @@ but the code actually implements it.
 }
 ```
 
-This catches the common pattern where docs say "wiki — stub" but someone
+This catches the common pattern where docs say "wiki -- stub" but someone
 already built the wiki feature and forgot to update the docs.
 
 ---
@@ -385,9 +389,9 @@ ARCHITECTURE docs:
 
 ## Severity Levels
 
-- **`"err"`** — blocks commit in pre-commit hook
-- **`"warn"`** — prints warning, allows commit (good for starting out)
-- **`"infoOnly": true`** — just shows the value, no comparison (good for discovery)
+- **`"err"`** -- blocks commit in pre-commit hook
+- **`"warn"`** -- prints warning, allows commit (good for starting out)
+- **`"infoOnly": true`** -- just shows the value, no comparison (good for discovery)
 
 ## Recommended Migration Path
 

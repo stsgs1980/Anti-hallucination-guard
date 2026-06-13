@@ -1,3 +1,6 @@
+<!-- ANTI-MONOLITH exception: Z.ai skill definition must be a single self-contained
+     document for the skill loader. Splitting would break the skill activation system.
+     Per Rule 12. -->
 # Anti-Hallucination Guard v2.5
 
 > Auto-activate on session start. Setup.sh merges rules into AGENT_RULES.md with markers.

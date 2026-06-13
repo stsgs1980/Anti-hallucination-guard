@@ -59,9 +59,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
   in file header.
 - Pre-commit hook Phase 4: line-count check (anti-monolith).
 - Pre-commit hook Phase 5: co-change buddy detection.
-- Rule 1 (RULE-017, renumbered to RULE-001): Answer before act -- agents MUST
-  answer questions before taking action. No unsolicited implementation.
-  (Was Rule 17 before v2.5.0 renumbering.)
+- Rule 1 (RULE-001): Answer before act -- agents MUST answer questions before
+  taking action. No unsolicited implementation.
 - .ahg-cochange.json: default co-change dependency graph for AHG files
   (AGENT_RULES.md <-> README.md, registry.json, CHANGELOG.md, worklog.md;
   scripts/* <-> CHANGELOG.md; .git-hooks/* <-> CHANGELOG.md).
@@ -70,7 +69,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
-- Rule 12 (RULE-011, renumbered to RULE-012): annotated as hook-enforced (Phase 4)
+- Rule 12 (RULE-012): annotated as hook-enforced (Phase 4)
 - validate.sh whitelist: added line-count-check.sh, co-change-check.sh
 - Pre-commit hook: added Phase 4 (anti-monolith) and Phase 5 (co-change)
 
@@ -86,10 +85,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- Rule 17 (RULE-016, renumbered to RULE-017): Upstream write protection --
-  consumer project agents MUST NOT push, merge, create PRs, or modify AHG
-  upstream in any way. Consumer projects are READ-ONLY consumers of the AHG
-  submodule. (Was Rule 16 before v2.5.0 renumbering.)
+- Rule 17 (RULE-017): Upstream write protection -- consumer project agents
+  MUST NOT push, merge, create PRs, or modify AHG upstream in any way.
+  Consumer projects are READ-ONLY consumers of the AHG submodule.
 - CODEOWNERS: only @stsgs1980 can approve changes to the repository
 - pr-guard.yml workflow: CI-level check that blocks PRs from forks,
   non-collaborators, and anti-tampering attempts (removing Rule 16/17

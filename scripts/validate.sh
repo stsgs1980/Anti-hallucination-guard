@@ -78,6 +78,7 @@ ALLOWED=(
     ".gitignore"
     ".ahg-cochange.json"
     ".ahgrc"
+    "verify-docs.json"
     ".git-hooks/"
     ".git-hooks/pre-commit"
     ".git-hooks/pre-push"

@@ -31,6 +31,9 @@
 # Config file
 !.ahgrc
 
+# verify-docs config
+!verify-docs.json
+
 # .github directory (CI workflows + CODEOWNERS)
 !.github/
 !.github/CODEOWNERS
