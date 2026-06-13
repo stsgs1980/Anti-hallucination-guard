@@ -50,8 +50,11 @@ BLOCKS=$(grep -c '^---$' "$WORKLOG" 2>/dev/null)
 echo "[$(timestamp)] Status: worklog=$BLOCKS blocks, idle=$((IDLE/60))min" >> "$LOG"
 
 # --- Sandbox verification checks (Rule 8) ---
-# Only run if we appear to be inside Z.ai Sandbox
-SANDBOX_ROOT="/home/z/my-project"
+# Auto-detect sandbox root: prefer Z.AI sandbox, fallback to PROJECT_ROOT
+SANDBOX_ROOT=""
+if [ -d "/home/z/my-project/.zscripts" ]; then
+    SANDBOX_ROOT="/home/z/my-project"
+fi
 
 if [ -d "$SANDBOX_ROOT/.zscripts" ]; then
     # Check 5: dev server managed by sandbox (not manual next dev)

@@ -17,5 +17,10 @@ else
     STAGE_FILES="$STAGE_FILES tools/"
 fi
 
-git add $STAGE_FILES 2>/dev/null || true
+# Use git add with -- to separate paths from options.
+# Quote each path to handle spaces. Silencing stderr is intentional here:
+# some files (e.g. .git/hooks/) may not exist if setup was partial.
+for _f in $STAGE_FILES; do
+    git add -- "$_f" 2>/dev/null || true
+done
 ok "Files added to git staging"
