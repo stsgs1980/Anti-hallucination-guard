@@ -5,6 +5,9 @@
 
 mkdir -p "$PROJECT_ROOT/scripts"
 
+# Resolve real MODULE_ROOT path (for nested-deploy protection)
+_module_real="$(readlink -f "$MODULE_ROOT" 2>/dev/null || echo "$MODULE_ROOT")"
+
 # Helper: deploy a script, overwriting if it's ours (has AHG marker),
 # skipping if it's a custom file from the project.
 deploy_script() {
@@ -17,9 +20,24 @@ deploy_script() {
         return
     fi
 
-    # Skip if SRC and DST are the same file (running in AHG standalone repo)
-    if [ "$SRC" = "$DST" ]; then
+    # Skip if SRC and DST resolve to the same file (running in AHG standalone repo)
+    # Use canonical paths to catch symlinks and relative path differences
+    local SRC_REAL DST_REAL
+    SRC_REAL="$(readlink -f "$SRC" 2>/dev/null || echo "$SRC")"
+    DST_REAL="$(readlink -f "$DST" 2>/dev/null || echo "$DST")"
+    if [ "$SRC_REAL" = "$DST_REAL" ]; then
         ok "scripts/$NAME is module source -- skip copy"
+        return
+    fi
+
+    # Safety: never deploy scripts INSIDE the AHG module directory.
+    # This prevents creating a nested scripts/scripts/ copy when
+    # running from within the AHG submodule.
+    if [ "$DST_REAL" = "${DST_REAL#$_module_real}" ] 2>/dev/null; then
+        : # DST is outside MODULE_ROOT -- good
+    else
+        # DST is inside MODULE_ROOT -- skip to avoid nested copy
+        warn "scripts/$NAME: DST inside module dir -- skip (would create nested copy)"
         return
     fi
 
