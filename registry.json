@@ -1,11 +1,11 @@
 {
-  "version": "2.4.0",
+  "version": "2.5.0",
   "updated": "2026-06-14",
   "description": "ID registry for anti-hallucination-guard. Each entry is an addressable entity that consumer projects may depend on.",
   "items": {
     "RULE-001": {
       "file": "AGENT_RULES.md",
-      "anchor": "rule-1-worklog--before-and-after-every-action",
+      "anchor": "rule-1-c-worklog--before-and-after-every-action",
       "title": "worklog -- BEFORE and AFTER every action",
       "version": "1.0",
       "level": "critical",
@@ -13,7 +13,7 @@
     },
     "RULE-002": {
       "file": "AGENT_RULES.md",
-      "anchor": "rule-2-read-before-write-read-before-write",
+      "anchor": "rule-2-c-read-before-write-read-before-write",
       "title": "Read before write",
       "version": "1.0",
       "level": "critical",
@@ -21,7 +21,7 @@
     },
     "RULE-003": {
       "file": "AGENT_RULES.md",
-      "anchor": "rule-3-one-logical-block----one-commit",
+      "anchor": "rule-3-c-one-logical-block----one-commit",
       "title": "One logical block -- one commit",
       "version": "1.0",
       "level": "critical",
@@ -29,7 +29,7 @@
     },
     "RULE-004": {
       "file": "AGENT_RULES.md",
-      "anchor": "rule-4-no-loops",
+      "anchor": "rule-4-c-no-loops",
       "title": "No loops",
       "version": "1.0",
       "level": "critical",
@@ -37,7 +37,7 @@
     },
     "RULE-005": {
       "file": "AGENT_RULES.md",
-      "anchor": "rule-5-honest-reporting",
+      "anchor": "rule-5-c-honest-reporting",
       "title": "Honest reporting",
       "version": "1.0",
       "level": "critical",
@@ -45,7 +45,7 @@
     },
     "RULE-006": {
       "file": "AGENT_RULES.md",
-      "anchor": "rule-6-work-structure",
+      "anchor": "rule-6-w-work-structure",
       "title": "Work structure",
       "version": "1.0",
       "level": "warning",
@@ -53,7 +53,7 @@
     },
     "RULE-007": {
       "file": "AGENT_RULES.md",
-      "anchor": "rule-7-sandbox-verification-no-fake-setup",
+      "anchor": "rule-7-c-sandbox-verification-no-fake-setup",
       "title": "Sandbox verification (no fake setup)",
       "version": "1.0",
       "level": "critical",
@@ -61,7 +61,7 @@
     },
     "RULE-008": {
       "file": "AGENT_RULES.md",
-      "anchor": "rule-8-session-start-protocol-drift-prevention",
+      "anchor": "rule-8-c-session-start-protocol-drift-prevention",
       "title": "Session Start Protocol (drift prevention)",
       "version": "1.0",
       "level": "critical",
@@ -69,7 +69,7 @@
     },
     "RULE-009": {
       "file": "AGENT_RULES.md",
-      "anchor": "rule-9-documentation-sync-no-code-without-docs",
+      "anchor": "rule-9-c-documentation-sync-no-code-without-docs",
       "title": "Documentation sync (no code without docs)",
       "version": "1.0",
       "level": "critical",
@@ -77,7 +77,7 @@
     },
     "RULE-010": {
       "file": "AGENT_RULES.md",
-      "anchor": "rule-10-integrity-protection-no-self-sabotage",
+      "anchor": "rule-10-c-integrity-protection-no-self-sabotage",
       "title": "Integrity protection (no self-sabotage)",
       "version": "1.0",
       "level": "critical",
@@ -85,7 +85,7 @@
     },
     "RULE-011": {
       "file": "AGENT_RULES.md",
-      "anchor": "rule-11-anti-monolith-no-file-over-250-lines",
+      "anchor": "rule-11-c-anti-monolith-no-file-over-250-lines",
       "title": "Anti-monolith (no file over 250 lines)",
       "version": "1.1",
       "level": "critical",
@@ -93,7 +93,7 @@
     },
     "RULE-012": {
       "file": "AGENT_RULES.md",
-      "anchor": "rule-12-use-ahg-bump-for-version-updates",
+      "anchor": "rule-12-c-use-ahg-bump-for-version-updates",
       "title": "Use ahg bump for version updates",
       "version": "1.1",
       "level": "critical",
@@ -101,7 +101,7 @@
     },
     "RULE-013": {
       "file": "AGENT_RULES.md",
-      "anchor": "rule-13-pre-commit-mandatory-checklist",
+      "anchor": "rule-13-c-pre-commit-mandatory-checklist",
       "title": "Pre-commit mandatory checklist",
       "version": "1.1",
       "level": "critical",
@@ -109,15 +109,39 @@
     },
     "RULE-014": {
       "file": "AGENT_RULES.md",
-      "anchor": "rule-14-no-unicode-graphics-unicode_policy-compliance",
+      "anchor": "rule-14-w-no-unicode-graphics-unicode_policy-compliance",
       "title": "No Unicode graphics (UNICODE_POLICY compliance)",
       "version": "1.0",
       "level": "warning",
       "related": []
     },
+    "RULE-015": {
+      "file": "AGENT_RULES.md",
+      "anchor": "rule-15-c-ahg-submodule-is-immutable-architecture-no-removal-no-inlining",
+      "title": "AHG submodule is immutable architecture (no removal, no inlining)",
+      "version": "1.0",
+      "level": "critical",
+      "related": ["RULE-010", "ARCH-SUBMODULE"]
+    },
+    "RULE-016": {
+      "file": "AGENT_RULES.md",
+      "anchor": "rule-16-c-upstream-write-protection-no-consumer-agent-may-push-to-ahg",
+      "title": "Upstream write protection (no consumer agent may push to AHG)",
+      "version": "1.0",
+      "level": "critical",
+      "related": ["RULE-010", "RULE-015", "ARCH-UPSTREAM"]
+    },
+    "RULE-017": {
+      "file": "AGENT_RULES.md",
+      "anchor": "rule-17-c-answer-before-act-no-unsolicited-action",
+      "title": "Answer before act (no unsolicited action)",
+      "version": "1.0",
+      "level": "critical",
+      "related": ["RULE-005", "RULE-006"]
+    },
     "STD-ENV-001": {
       "file": "AGENT_RULES.md",
-      "anchor": "rule-7-sandbox-verification-no-fake-setup",
+      "anchor": "rule-7-c-sandbox-verification-no-fake-setup",
       "title": "Reproducibility standard",
       "version": "1.0",
       "level": "critical",
@@ -125,7 +149,7 @@
     },
     "STD-ENV-002": {
       "file": "AGENT_RULES.md",
-      "anchor": "rule-7-sandbox-verification-no-fake-setup",
+      "anchor": "rule-7-c-sandbox-verification-no-fake-setup",
       "title": "Sandbox rules standard",
       "version": "1.0",
       "level": "critical",
@@ -194,14 +218,6 @@
       "version": "1.0",
       "level": "critical",
       "related": ["RULE-009"]
-    },
-    "RULE-017": {
-      "file": "AGENT_RULES.md",
-      "anchor": "rule-17-answer-before-act-no-unsolicited-action",
-      "title": "Answer before act (no unsolicited action)",
-      "version": "1.0",
-      "level": "critical",
-      "related": ["RULE-005", "RULE-006"]
     }
   }
 }

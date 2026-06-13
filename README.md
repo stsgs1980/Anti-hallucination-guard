@@ -1,7 +1,7 @@
 # anti-hallucination-guard
 
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version 2.4.0](https://img.shields.io/badge/v2.4.0-2026--06--14-green.svg)]()
+[![Version 2.5.0](https://img.shields.io/badge/v2.5.0-2026--06--14-green.svg)]()
 [![Bash](https://img.shields.io/badge/Shell-Bash-4EAA25.svg?logo=gnu-bash&logoColor=white)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-verify--docs-3178C6.svg?logo=typescript&logoColor=white)]()
 [![Git Hooks](https://img.shields.io/badge/Git-Hooks-FF6600.svg?logo=git&logoColor=white)]()
@@ -68,7 +68,7 @@ bash anti-hallucination-guard/setup.sh
 
 | File | Purpose |
 |---|---|
-| `AGENT_RULES.md` | Agent work rules (14 rules, copied to project root) |
+| `AGENT_RULES.md` | Agent work rules (17 rules, copied to project root) |
 | `worklog.md` | Mandatory work log (copied to project root) |
 | `.git/hooks/pre-commit` | Blocks commit without updated worklog + verify-docs + anti-monolith (Rule 11) + auto-discover fallback |
 | `.git/hooks/pre-push` | Blocks push with foreign files |
@@ -366,25 +366,25 @@ Example task structure in state file:
 
 ## AGENT_RULES.md (17 Rules)
 
-| Rule | Purpose |
-|------|---------|
-| Rule 17 | **Answer before act** (no unsolicited action) |
-| Rule 1 | worklog -- BEFORE and AFTER every action |
-| Rule 2 | Read before write |
-| Rule 3 | One logical block -- one commit |
-| Rule 4 | No loops (stop after 3rd attempt) |
-| Rule 5 | Honest reporting |
-| Rule 6 | Work structure |
-| Rule 7 | Sandbox verification (no fake setup) |
-| Rule 8 | **Session Start Protocol** (drift prevention) |
-| Rule 9 | **Documentation sync** (no code without docs) |
-| Rule 10 | **Integrity protection** (no self-sabotage) |
-| Rule 11 | **Anti-monolith** (no file over 250 lines) |
-| Rule 12 | **ahg bump** (atomic version updates, no manual edits) |
-| Rule 13 | **Pre-commit checklist** (mandatory before every commit) |
-| Rule 14 | **UNICODE_POLICY** (ASCII-only output, no emoji, no Unicode graphics) |
-| Rule 15 | **AHG submodule is immutable** (no removal, no inlining) |
-| Rule 16 | **Upstream write protection** (no consumer agent may push to AHG) |
+| Rule | Level | Purpose |
+|------|-------|---------|
+| Rule 17 | [C] | **Answer before act** (no unsolicited action) |
+| Rule 1 | [C] | worklog -- BEFORE and AFTER every action |
+| Rule 2 | [C] | Read before write |
+| Rule 3 | [C] | One logical block -- one commit |
+| Rule 4 | [C] | No loops (stop after 3rd attempt) |
+| Rule 5 | [C] | Honest reporting |
+| Rule 6 | [W] | Work structure |
+| Rule 7 | [C] | Sandbox verification (no fake setup) |
+| Rule 8 | [C] | **Session Start Protocol** (drift prevention) |
+| Rule 9 | [C] | **Documentation sync** (no code without docs) |
+| Rule 10 | [C] | **Integrity protection** (no self-sabotage) |
+| Rule 11 | [C] | **Anti-monolith** (no file over 250 lines) |
+| Rule 12 | [C] | **ahg bump** (atomic version updates, no manual edits) |
+| Rule 13 | [C] | **Pre-commit checklist** (mandatory before every commit) |
+| Rule 14 | [W] | **UNICODE_POLICY** (ASCII-only output, no emoji, no Unicode graphics) |
+| Rule 15 | [C] | **AHG submodule is immutable** (no removal, no inlining) |
+| Rule 16 | [C] | **Upstream write protection** (no consumer agent may push to AHG) |
 
 ### Rule 8: Session Start Protocol
 
@@ -544,7 +544,7 @@ anti-hallucination-guard/
     09-git-staging.sh              -- git add installed files
   CHANGELOG.md                       -- version history (Keep a Changelog format)
   registry.json                      -- ID registry for all addressable entities
-  AGENT_RULES.md                    -- agent rules template (14 rules, with ID comments)
+  AGENT_RULES.md                    -- agent rules template (17 rules, with ID comments)
   .git-hooks/
     pre-commit                      -- pre-commit hook (5 phases)
     pre-push                        -- pre-push hook (foreign file protection)
@@ -601,4 +601,4 @@ anti-hallucination-guard/
 
 ---
 
-v2.4.0 | 2026-06-14 | MIT
+v2.5.0 | 2026-06-14 | MIT

@@ -3,6 +3,19 @@
 All notable changes to anti-hallucination-guard are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [2.5.0] - 2026-06-14
+
+### Changed
+
+- AGENT_RULES.md: added H1 title, Quick Reference block (5 critical rules),
+  Table of Contents with anchor links, visual [C]/[W] severity markers in
+  rule headings (previously only in HTML ID comments), ANTI-MONOLITH exception
+  comment for line-count compliance. Removed stray "test" text.
+- registry.json: updated all anchors to match new heading format (rule-N-c/w-...).
+  Added RULE-015 and RULE-016 entries. Version bumped to 2.5.0.
+- README.md: added [C]/[W] Level column to rules table, fixed "14 rules" to
+  "17 rules" in two locations. Version bumped to 2.5.0.
+
 ## [2.4.0] - 2026-06-14
 
 ### Added

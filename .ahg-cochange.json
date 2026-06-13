@@ -1,6 +1,6 @@
 {
   "description": "Co-change dependency graph. If trigger file changes, buddy files should also change.",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "pairs": [
     {
       "trigger": "AGENT_RULES.md",
