@@ -70,7 +70,7 @@ bash anti-hallucination-guard/setup.sh
 |---|---|
 | `AGENT_RULES.md` | Agent work rules (17 rules, copied to project root) |
 | `worklog.md` | Mandatory work log (copied to project root) |
-| `.git/hooks/pre-commit` | Blocks commit without updated worklog + verify-docs + anti-monolith (Rule 11) + auto-discover fallback |
+| `.git/hooks/pre-commit` | Blocks commit without updated worklog + verify-docs + anti-monolith (Rule 12) + auto-discover fallback |
 | `.git/hooks/pre-push` | Blocks push with foreign files |
 | `scripts/ahg.sh` | Unified CLI for all AHG commands |
 | `scripts/check-agent.sh` | Activity monitor (cron or manual) |
@@ -79,8 +79,8 @@ bash anti-hallucination-guard/setup.sh
 | `scripts/sync-task-state.sh` | Auto-sync task statuses based on implementation files |
 | `scripts/check-hooks-snapshot.sh` | Create integrity snapshot of hooks/configs |
 | `scripts/check-hooks-verify.sh` | Verify hooks/configs against snapshot (anti-tampering) |
-| `scripts/line-count-check.sh` | Enforce Rule 11: block commit if file exceeds 250 lines |
-| `scripts/co-change-check.sh` | Enforce Rule 9: warn if buddy files not in same commit |
+| `scripts/line-count-check.sh` | Enforce Rule 12: block commit if file exceeds 250 lines |
+| `scripts/co-change-check.sh` | Enforce Rule 10: warn if buddy files not in same commit |
 | `tools/verify-docs/` | 5-section doc consistency checker with auto-discover (requires bun) |
 
 ## Unified CLI: ahg.sh
@@ -295,7 +295,7 @@ its ID, version, severity level, and related IDs:
 
 ```html
 <!-- ID: RULE-011 | ver:1.0 | Level: C | Related: RULE-003 -->
-## Rule 11: Anti-monolith (no file over 250 lines)
+## Rule 12: Anti-monolith (no file over 250 lines)
 ```
 
 These comments are grep-able (`grep "ID: RULE-011"`) and do not affect
@@ -368,25 +368,25 @@ Example task structure in state file:
 
 | Rule | Level | Purpose |
 |------|-------|---------|
-| Rule 17 | [C] | **Answer before act** (no unsolicited action) |
-| Rule 1 | [C] | worklog -- BEFORE and AFTER every action |
-| Rule 2 | [C] | Read before write |
-| Rule 3 | [C] | One logical block -- one commit |
-| Rule 4 | [C] | No loops (stop after 3rd attempt) |
-| Rule 5 | [C] | Honest reporting |
-| Rule 6 | [W] | Work structure |
-| Rule 7 | [C] | Sandbox verification (no fake setup) |
-| Rule 8 | [C] | **Session Start Protocol** (drift prevention) |
-| Rule 9 | [C] | **Documentation sync** (no code without docs) |
-| Rule 10 | [C] | **Integrity protection** (no self-sabotage) |
-| Rule 11 | [C] | **Anti-monolith** (no file over 250 lines) |
-| Rule 12 | [C] | **ahg bump** (atomic version updates, no manual edits) |
-| Rule 13 | [C] | **Pre-commit checklist** (mandatory before every commit) |
-| Rule 14 | [W] | **UNICODE_POLICY** (ASCII-only output, no emoji, no Unicode graphics) |
-| Rule 15 | [C] | **AHG submodule is immutable** (no removal, no inlining) |
-| Rule 16 | [C] | **Upstream write protection** (no consumer agent may push to AHG) |
+| Rule 1 | [C] | **Answer before act** (no unsolicited action) |
+| Rule 2 | [C] | worklog -- BEFORE and AFTER every action |
+| Rule 3 | [C] | Read before write |
+| Rule 4 | [C] | One logical block -- one commit |
+| Rule 5 | [C] | No loops (stop after 3rd attempt) |
+| Rule 6 | [C] | Honest reporting |
+| Rule 7 | [W] | Work structure |
+| Rule 8 | [C] | Sandbox verification (no fake setup) |
+| Rule 9 | [C] | **Session Start Protocol** (drift prevention) |
+| Rule 10 | [C] | **Documentation sync** (no code without docs) |
+| Rule 11 | [C] | **Integrity protection** (no self-sabotage) |
+| Rule 12 | [C] | **Anti-monolith** (no file over 250 lines) |
+| Rule 13 | [C] | **ahg bump** (atomic version updates, no manual edits) |
+| Rule 14 | [C] | **Pre-commit checklist** (mandatory before every commit) |
+| Rule 15 | [W] | **UNICODE_POLICY** (ASCII-only output, no emoji, no Unicode graphics) |
+| Rule 16 | [C] | **AHG submodule is immutable** (no removal, no inlining) |
+| Rule 17 | [C] | **Upstream write protection** (no consumer agent may push to AHG) |
 
-### Rule 8: Session Start Protocol
+### Rule 9: Session Start Protocol
 
 Before ANY work in a new session, the agent must:
 1. Scan project structure (list source files)
@@ -395,7 +395,7 @@ Before ANY work in a new session, the agent must:
 4. If drift > 3 items: UPDATE DOCUMENTATION FIRST, then do the task
 5. Record scan results in worklog.md
 
-### Rule 10: Integrity Protection
+### Rule 11: Integrity Protection
 
 Agents MUST NOT disable, bypass, or weaken the anti-hallucination mechanisms:
 
@@ -408,19 +408,19 @@ Agents MUST NOT disable, bypass, or weaken the anti-hallucination mechanisms:
 Detection: `check-hooks-verify.sh` fingerprints hooks and configs.
 CI pipeline runs verify-docs independently (cannot be bypassed locally).
 
-### Rule 11: Anti-monolith
+### Rule 12: Anti-monolith
 
 Every file MUST stay under 250 lines. When a file crosses this threshold,
 the agent MUST stop writing, split the file, and continue with smaller modules.
 Functions must stay under 50 lines. Auto-activation: do not wait to be asked.
 
-### Rule 12: ahg bump
+### Rule 13: ahg bump
 
 When changing the project version, use `bash scripts/ahg.sh bump X.Y.Z` instead
 of manual edits. This command auto-discovers ALL files containing version numbers
 and updates them atomically. Manual updates cause version drift.
 
-### Rule 14: UNICODE_POLICY
+### Rule 15: UNICODE_POLICY
 
 All AHG output must comply with No-Unicode Policy v2.1. No emoji, no Unicode
 pictograms, no box-drawing characters. Status markers: [OK], [ERR], [WARN], [INFO].
@@ -454,7 +454,7 @@ The pre-commit hook runs in multiple phases:
 | 2.5 | sync-task-state (cascade-state auto-sync) | No (warn) |
 | 3 | verify-docs (if verify-docs.json exists) | Yes |
 | 3.5 | auto-discover fallback (full verify engine if no config) | Yes |
-| 4 | Anti-monolith (Rule 11: no file over 250 lines) | Yes |
+| 4 | Anti-monolith (Rule 12: no file over 250 lines) | Yes |
 | 5 | Co-change check (buddy files must change together) | Warn |
 
 ## Usage
@@ -463,7 +463,7 @@ The pre-commit hook runs in multiple phases:
 
 ```
 Before starting work, read /AGENT_RULES.md and /worklog.md.
-(Rule 8: also scan project structure and check for drift)
+(Rule 9: also scan project structure and check for drift)
 ```
 
 ### During work
@@ -472,8 +472,8 @@ Before starting work, read /AGENT_RULES.md and /worklog.md.
 - After modifying -> update worklog.md
 - After a logical block -> git commit (blocked without worklog)
 - On 3rd failed attempt -> STOP, write in chat
-- New code without doc update -> Rule 9 violation
-- Version change -> use `ahg bump` (Rule 12)
+- New code without doc update -> Rule 10 violation
+- Version change -> use `ahg bump` (Rule 13)
 
 ### After session ends
 
@@ -559,8 +559,8 @@ anti-hallucination-guard/
     check-hooks-lib.sh              -- shared functions for integrity checks
     check-hooks-snapshot.sh         -- create integrity snapshot
     check-hooks-verify.sh           -- verify against snapshot (anti-tampering)
-    line-count-check.sh             -- enforce Rule 11 (anti-monolith)
-    co-change-check.sh              -- enforce Rule 9 (buddy file detection)
+    line-count-check.sh             -- enforce Rule 12 (anti-monolith)
+    co-change-check.sh              -- enforce Rule 10 (buddy file detection)
   tools/
     verify-docs/                    -- built-in verify-docs (5 sections + discover + bump)
       src/
