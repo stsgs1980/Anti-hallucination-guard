@@ -62,6 +62,7 @@
 !tools/verify-docs/examples/
 !tools/verify-docs/examples/**
 !tools/verify-docs/package.json
+!tools/verify-docs/CONSUMER_GUIDE.md
 
 # ---- Explicit re-ignore for generated files inside our directories ----
 # Even though our directories are un-ignored, these must stay ignored:

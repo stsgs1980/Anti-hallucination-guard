@@ -137,6 +137,7 @@ ALLOWED=(
     "tools/verify-docs/examples/monorepo/"
     "tools/verify-docs/examples/monorepo/verify-docs.json"
     "tools/verify-docs/examples/monorepo/verify-docs.plugins.ts"
+    "tools/verify-docs/CONSUMER_GUIDE.md"
 )
 
 ERRORS=0
