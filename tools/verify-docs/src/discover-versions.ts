@@ -127,11 +127,25 @@ function extractVersion(
   try {
     const content = readFileSync(join(root, filePath), "utf-8");
     // Only scan first 100 lines (version is usually near the top)
-    const lines = content.split("\n").slice(0, 100).join("\n");
+    const lines = content.split("\n").slice(0, 100);
+
+    // For CHANGELOG files, skip lines that mention version only as part of
+    // a change description (e.g. "version 2.0.0 -> 2.5.0") or as a section
+    // header (e.g. "## [2.0.0]"). These are historical records, not the
+    // current version of the project.
+    const isChangelog = filePath.toLowerCase().includes("changelog");
+
     for (const p of patterns) {
-      const match = lines.match(p.pattern);
-      if (match && match[1]) {
-        return { version: match[1], pattern: p.description };
+      for (const line of lines) {
+        // Skip CHANGELOG section headers (## [X.Y.Z])
+        if (isChangelog && /^##\s*\[/.test(line)) continue;
+        // Skip lines describing version transitions (X.Y.Z -> Z.W.Q)
+        if (/\d+\.\d+\.\d+\s*->/.test(line)) continue;
+
+        const match = line.match(p.pattern);
+        if (match && match[1]) {
+          return { version: match[1], pattern: p.description };
+        }
       }
     }
   } catch { /* can't read */ }
