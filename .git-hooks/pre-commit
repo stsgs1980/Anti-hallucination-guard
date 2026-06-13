@@ -107,14 +107,15 @@ fi
 
 if [ -f "verify-docs.json" ]; then
     if command -v bun &>/dev/null; then
-        # Find verify-docs CLI
+        # Find verify-docs CLI (use absolute path for bun module resolution)
+        MODULE_ROOT="$(git rev-parse --show-toplevel)"
         VD_CLI=""
         if [ -f "anti-hallucination-guard/tools/verify-docs/src/cli.ts" ]; then
-            VD_CLI="anti-hallucination-guard/tools/verify-docs/src/cli.ts"
+            VD_CLI="$MODULE_ROOT/anti-hallucination-guard/tools/verify-docs/src/cli.ts"
         elif [ -f "tools/verify-docs/src/cli.ts" ]; then
-            VD_CLI="tools/verify-docs/src/cli.ts"
+            VD_CLI="$MODULE_ROOT/tools/verify-docs/src/cli.ts"
         fi
-        
+
         if [ -n "$VD_CLI" ]; then
             echo "  Running verify-docs (pre-commit check)..."
             bun run "$VD_CLI" --ci 2>&1
@@ -134,11 +135,12 @@ fi
 
 # ---- Phase 3.5: auto-discover fallback (if no verify-docs.json) ----
 if [ ! -f "verify-docs.json" ] && command -v bun &>/dev/null; then
+    MODULE_ROOT="$(git rev-parse --show-toplevel)"
     VD_CLI=""
     if [ -f "anti-hallucination-guard/tools/verify-docs/src/cli.ts" ]; then
-        VD_CLI="anti-hallucination-guard/tools/verify-docs/src/cli.ts"
+        VD_CLI="$MODULE_ROOT/anti-hallucination-guard/tools/verify-docs/src/cli.ts"
     elif [ -f "tools/verify-docs/src/cli.ts" ]; then
-        VD_CLI="tools/verify-docs/src/cli.ts"
+        VD_CLI="$MODULE_ROOT/tools/verify-docs/src/cli.ts"
     fi
     if [ -n "$VD_CLI" ]; then
         echo "  No verify-docs.json -- running auto-discover..."
