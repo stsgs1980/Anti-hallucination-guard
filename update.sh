@@ -62,18 +62,46 @@ LOCAL_HASH=$(git rev-parse HEAD)
 REMOTE_HASH=$(git rev-parse origin/main 2>/dev/null || echo "unknown")
 
 if [ "$LOCAL_HASH" = "$REMOTE_HASH" ]; then
-    ok "Already up to date ($LOCAL_HASH)"
+    ok "Submodule is up to date ($LOCAL_HASH)"
     echo ""
-    echo "No changes to pull. Current version is latest."
-    # Still offer to re-run setup.sh (in case hooks are missing)
-    if [ -f "$MODULE_ROOT/setup.sh" ]; then
-        echo ""
-        read -rp "Re-run setup.sh anyway? (y/N): " answer
-        if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
-            cd "$PROJECT_ROOT"
-            bash "$MODULE_ROOT/setup.sh"
+
+    # Check if deployed hooks match the submodule version.
+    # If hooks are stale (e.g. after git submodule update --remote
+    # without re-running setup.sh), we MUST re-deploy.
+    _HOOKS_STALE=0
+    _PRE_COMMIT="$PROJECT_ROOT/.git/hooks/pre-commit"
+    _PRE_PUSH="$PROJECT_ROOT/.git/hooks/pre-push"
+
+    if [ ! -f "$_PRE_COMMIT" ] || [ ! -f "$_PRE_PUSH" ]; then
+        _HOOKS_STALE=1
+        warn "Git hooks are missing -- need setup.sh"
+    else
+        # Check if hooks contain the current AHG version marker
+        _hook_ver=$(grep -oP 'v\d+\.\d+\.\d+' "$_PRE_COMMIT" 2>/dev/null | head -1 || true)
+        _module_ver=$(grep -oP 'v\d+\.\d+\.\d+' "$MODULE_ROOT/AGENT_RULES.md" 2>/dev/null | tail -1 || true)
+        if [ -n "$_module_ver" ] && [ "$_hook_ver" != "$_module_ver" ]; then
+            _HOOKS_STALE=1
+            warn "Hooks are stale ($_hook_ver) -- module is $_module_ver"
         fi
     fi
+
+    # Check AGENT_RULES.md freshness
+    if [ -f "$PROJECT_ROOT/AGENT_RULES.md" ]; then
+        if ! grep -q "Rule 1[56]" "$PROJECT_ROOT/AGENT_RULES.md" 2>/dev/null; then
+            _HOOKS_STALE=1
+            warn "AGENT_RULES.md missing Rule 15/16 -- need setup.sh"
+        fi
+    fi
+
+    if [ "$_HOOKS_STALE" -eq 1 ]; then
+        info "Re-running setup.sh to update deployed files..."
+        cd "$PROJECT_ROOT"
+        bash "$MODULE_ROOT/setup.sh"
+        ok "Deployed files updated"
+    else
+        info "No changes to pull. Hooks and files are current."
+    fi
+
     exit 0
 fi
 
