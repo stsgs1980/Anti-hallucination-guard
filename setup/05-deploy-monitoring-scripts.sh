@@ -17,6 +17,12 @@ deploy_script() {
         return
     fi
 
+    # Skip if SRC and DST are the same file (running in AHG standalone repo)
+    if [ "$SRC" = "$DST" ]; then
+        ok "scripts/$NAME is module source -- skip copy"
+        return
+    fi
+
     if [ -f "$DST" ]; then
         # Check if it's our file (deployed by AHG previously)
         if grep -q "anti-hallucination-guard\|verify-docs" "$DST" 2>/dev/null; then

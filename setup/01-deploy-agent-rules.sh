@@ -7,6 +7,14 @@
 
 AHG_BLOCK_SRC="$MODULE_ROOT/AGENT_RULES.md"
 
+# Guard: if RULES and AHG_BLOCK_SRC are the same file (running in AHG
+# standalone repo), skip deployment -- the file IS the rules, no need to
+# copy it into itself with AHG:START/END markers.
+if [ "$RULES" = "$AHG_BLOCK_SRC" ]; then
+    ok "AGENT_RULES.md is the module source -- skip AHG block deployment"
+    return 0 2>/dev/null || exit 0
+fi
+
 if [ -f "$RULES" ]; then
     # Check if AHG block already exists
     if grep -q "AHG:START" "$RULES" 2>/dev/null; then
