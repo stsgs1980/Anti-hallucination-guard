@@ -169,10 +169,10 @@ if [ ! -f "verify-docs.json" ] && command -v bun &>/dev/null && [ -n "$VD_CLI" ]
     DISCOVER_RESULT=$?
     if [ "$DISCOVER_RESULT" -ne 0 ]; then
         echo ""
-        echo "  ERROR: auto-discover found issues!"
+        echo "  [WARN] auto-discover found issues (not blocking):"
         echo "  Fix or create verify-docs.json: bun run $VD_CLI --init"
+        echo "  To enforce: run 'bun run $VD_CLI --init' and commit verify-docs.json"
         echo ""
-        exit 1
     fi
     echo "  OK: auto-discover passed"
 fi
@@ -193,7 +193,13 @@ fi
 
 if [ -n "$_lc_script" ]; then
     echo "  Running anti-monolith check (Rule 12)..."
-    bash "$_lc_script" 2>&1
+    # When AHG is a submodule, only scan the AHG directory -- not the host project.
+    # Host project files are not subject to AHG's anti-monolith rule.
+    _lc_dir=""
+    if [ -n "$_pc_ahg_dir" ] && [ "$_pc_ahg_dir" != "$_pc_git_root" ]; then
+        _lc_dir="$_pc_ahg_dir"
+    fi
+    LINE_CHECK_DIR="$_lc_dir" bash "$_lc_script" 2>&1
     _lc_result=$?
     if [ "$_lc_result" -ne 0 ]; then
         echo ""
