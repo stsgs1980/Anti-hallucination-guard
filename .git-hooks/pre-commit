@@ -207,5 +207,31 @@ else
     echo "  SKIP: line-count-check.sh not found (Rule 11 enforcement not deployed)"
 fi
 
+# ---- Phase 5: Co-change check (buddy file detection) ----
+# If file A changes, file B should also change in this commit.
+# Config: .ahg-cochange.json in project root.
+# Bypass: [no-cochange] in commit message.
+
+_cc_script=""
+if [ -f "scripts/co-change-check.sh" ]; then
+    _cc_script="scripts/co-change-check.sh"
+elif [ -n "$_pc_ahg_dir" ] && [ -f "$_pc_ahg_dir/scripts/co-change-check.sh" ]; then
+    _cc_script="$_pc_ahg_dir/scripts/co-change-check.sh"
+fi
+
+if [ -n "$_cc_script" ]; then
+    echo "  Running co-change check..."
+    bash "$_cc_script" 2>&1
+    _cc_result=$?
+    if [ $_cc_result -ne 0 ]; then
+        echo ""
+        echo "  ERROR: Co-change violations found!"
+        echo "  Missing buddy files in this commit."
+        echo "  Add them or use [no-cochange] in commit message."
+        echo ""
+        exit 1
+    fi
+fi
+
 # NOTE: Do NOT add 'exit 0' here.
 # Other modules (cascade-guard, verify-docs) append their checks after this block.

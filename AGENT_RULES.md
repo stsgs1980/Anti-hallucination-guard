@@ -1,3 +1,20 @@
+<!-- ID: RULE-017 | ver:1.0 | Level: C | Related: RULE-005, RULE-006 -->
+## RULE 17: ANSWER BEFORE ACT (NO UNSOLICITED ACTION)
+
+IF ASKED A QUESTION -- ANSWER THE QUESTION. DO NOT START IMPLEMENTING.
+DO NOT CREATE FILES. DO NOT MODIFY CODE. DO NOT COMMIT.
+ONLY ACT WHEN GIVEN AN EXPLICIT TASK.
+
+1. Question -> ANSWER, nothing else
+2. Task -> EXECUTE
+3. Unsure -> ASK, do NOT guess
+4. "Do it" / "Go ahead" / "Make it so" -> that is a task, execute
+
+This rule is the FIRST rule for a reason. Every session, every agent,
+every time. Read it. Follow it.
+
+---
+
 <!-- ID: RULE-001 | ver:1.0 | Level: C | Related: RULE-003, RULE-006 -->
 ## Rule 1: worklog -- BEFORE and AFTER every action
 
@@ -349,3 +366,4 @@ Stage Summary:
 ---
 
 v2.4.0 | 2026-06-14 | anti-hallucination-guard
+test

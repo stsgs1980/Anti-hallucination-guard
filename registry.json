@@ -186,6 +186,22 @@
       "version": "1.0",
       "level": "critical",
       "related": ["RULE-011"]
+    },
+    "PROC-COCHANGE": {
+      "file": "scripts/co-change-check.sh",
+      "anchor": "",
+      "title": "Co-change buddy detection (Rule 9 hook)",
+      "version": "1.0",
+      "level": "critical",
+      "related": ["RULE-009"]
+    },
+    "RULE-017": {
+      "file": "AGENT_RULES.md",
+      "anchor": "rule-17-answer-before-act-no-unsolicited-action",
+      "title": "Answer before act (no unsolicited action)",
+      "version": "1.0",
+      "level": "critical",
+      "related": ["RULE-005", "RULE-006"]
     }
   }
 }

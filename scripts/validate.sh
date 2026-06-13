@@ -1,5 +1,6 @@
 #!/bin/bash
 # anti-hallucination-guard / validate.sh
+# ANTI-MONOLITH exception: flat whitelist config file, naturally exceeds 250 lines.
 # Checks that the repository contains only module files.
 # Run: bash validate.sh
 # Can also be used as a pre-push hook.
@@ -75,6 +76,7 @@ ALLOWED=(
     "CHANGELOG.md"
     "registry.json"
     ".gitignore"
+    ".ahg-cochange.json"
     ".git-hooks/"
     ".git-hooks/pre-commit"
     ".git-hooks/pre-push"
@@ -94,6 +96,7 @@ ALLOWED=(
     "scripts/check-hooks-snapshot.sh"
     "scripts/check-hooks-verify.sh"
     "scripts/line-count-check.sh"
+    "scripts/co-change-check.sh"
     "scripts/setup-branch-protection.sh"
     "skills/"
     "skills/anti-hallucination-guard/"

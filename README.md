@@ -80,6 +80,7 @@ bash anti-hallucination-guard/setup.sh
 | `scripts/check-hooks-snapshot.sh` | Create integrity snapshot of hooks/configs |
 | `scripts/check-hooks-verify.sh` | Verify hooks/configs against snapshot (anti-tampering) |
 | `scripts/line-count-check.sh` | Enforce Rule 11: block commit if file exceeds 250 lines |
+| `scripts/co-change-check.sh` | Enforce Rule 9: warn if buddy files not in same commit |
 | `tools/verify-docs/` | 5-section doc consistency checker with auto-discover (requires bun) |
 
 ## Unified CLI: ahg.sh
@@ -363,7 +364,7 @@ Example task structure in state file:
 }
 ```
 
-## AGENT_RULES.md (14 Rules)
+## AGENT_RULES.md (15 Rules)
 
 | Rule | Purpose |
 |------|---------|
@@ -381,6 +382,7 @@ Example task structure in state file:
 | Rule 12 | **ahg bump** (atomic version updates, no manual edits) |
 | Rule 13 | **Pre-commit checklist** (mandatory before every commit) |
 | Rule 14 | **UNICODE_POLICY** (ASCII-only output, no emoji, no Unicode graphics) |
+| Rule 17 | **Answer before act** (no unsolicited action) |
 
 ### Rule 8: Session Start Protocol
 
@@ -451,6 +453,7 @@ The pre-commit hook runs in multiple phases:
 | 3 | verify-docs (if verify-docs.json exists) | Yes |
 | 3.5 | auto-discover fallback (full verify engine if no config) | Yes |
 | 4 | Anti-monolith (Rule 11: no file over 250 lines) | Yes |
+| 5 | Co-change check (buddy files must change together) | Warn |
 
 ## Usage
 
@@ -555,6 +558,7 @@ anti-hallucination-guard/
     check-hooks-snapshot.sh         -- create integrity snapshot
     check-hooks-verify.sh           -- verify against snapshot (anti-tampering)
     line-count-check.sh             -- enforce Rule 11 (anti-monolith)
+    co-change-check.sh              -- enforce Rule 9 (buddy file detection)
   tools/
     verify-docs/                    -- built-in verify-docs (5 sections + discover + bump)
       src/

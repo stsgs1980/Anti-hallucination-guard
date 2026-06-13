@@ -47,3 +47,10 @@ deploy_script "check-hooks-lib.sh"
 deploy_script "check-hooks-snapshot.sh"
 deploy_script "check-hooks-verify.sh"
 deploy_script "line-count-check.sh"
+deploy_script "co-change-check.sh"
+
+# Note: .ahg-cochange.json is NOT deployed to consumer projects.
+# It contains AHG-internal co-change rules (AGENT_RULES.md <-> README.md etc.)
+# which are meaningless in consumer project context.
+# Consumer projects should create their own .ahg-cochange.json if they want
+# co-change detection for their own files.

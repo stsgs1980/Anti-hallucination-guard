@@ -48,6 +48,9 @@ cd "$PROJECT_ROOT"
 
 # Build find command with patterns
 # We use find + file extension matching for cross-platform compatibility
+# IMPORTANT: Disable glob expansion so "*.sh" stays as a pattern for find,
+# not expanded to "setup.sh update.sh" by bash word splitting.
+set -f
 for GLOB in $LINE_CHECK_GLOB; do
     # Strip the * prefix for find -name
     FIND_NAME="$GLOB"
@@ -93,6 +96,7 @@ for GLOB in $LINE_CHECK_GLOB; do
         fi
     done < <(find "$LINE_CHECK_DIR" -type f -name "$FIND_NAME" -print0 2>/dev/null)
 done
+set +f
 
 # -- Report --
 echo ""
