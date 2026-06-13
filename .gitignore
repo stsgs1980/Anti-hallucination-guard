@@ -25,8 +25,9 @@
 !setup/**
 !update.sh
 
-# .github directory (CI workflows)
+# .github directory (CI workflows + CODEOWNERS)
 !.github/
+!.github/CODEOWNERS
 !.github/workflows/
 !.github/workflows/*
 

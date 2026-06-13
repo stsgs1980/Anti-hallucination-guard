@@ -1,0 +1,20 @@
+# CODEOWNERS -- Anti-hallucination-guard
+# Every change to this repository requires approval from the owner.
+# No consumer project agent may approve or merge changes here.
+#
+# This file is part of the upstream write protection (Rule 16).
+# Consumer projects reference AHG as a git submodule.
+# They MUST NOT push, merge, or approve changes to this repo.
+
+# Default owner for everything in the repository
+# Only @stsgs1980 can approve PRs and push to protected branches
+*       @stsgs1980
+
+# Critical files -- any change requires owner review
+/.git-hooks/                     @stsgs1980
+/AGENT_RULES.md                  @stsgs1980
+/scripts/                        @stsgs1980
+/setup.sh                        @stsgs1980
+/setup/                          @stsgs1980
+/.github/                        @stsgs1980
+/registry.json                   @stsgs1980

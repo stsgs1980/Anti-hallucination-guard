@@ -1,0 +1,90 @@
+name: PR Guard
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  upstream-write-check:
+    name: Upstream write protection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify PR author has write access
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const author = pr.user.login;
+            const repo = context.repo;
+
+            // Get repository collaborator permission for the PR author
+            let permission = 'none';
+            try {
+              const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: repo.owner,
+                repo: repo.repo,
+                username: author,
+              });
+              permission = data.permission;
+            } catch (e) {
+              // User is not a collaborator at all
+              core.setFailed(`PR author @${author} is not a collaborator on this repository.`);
+              return;
+            }
+
+            // Only admin and write can merge
+            if (permission !== 'admin' && permission !== 'write') {
+              core.setFailed(
+                `PR author @${author} has '${permission}' access. ` +
+                `Only collaborators with 'write' or 'admin' permission may submit PRs to the AHG upstream repository. ` +
+                `Consumer project agents MUST NOT push to AHG (see AGENT_RULES.md Rule 16).`
+              );
+              return;
+            }
+
+            core.info(`PR author @${author} has '${permission}' access -- allowed.`);
+
+      - name: Check PR is not from a consumer project context
+        run: |
+          # Verify that the PR branch originates from this repository,
+          # not from a fork or a consumer project's clone.
+          PR_HEAD="${{ github.event.pull_request.head.repo.full_name }}"
+          THIS_REPO="${{ github.repository }}"
+
+          if [ "$PR_HEAD" != "$THIS_REPO" ]; then
+            echo ""
+            echo "  BLOCKED: PR from fork '$PR_HEAD'"
+            echo "  The AHG repository does not accept external fork PRs."
+            echo "  Consumer projects must NOT modify the AHG upstream."
+            echo "  See AGENT_RULES.md Rule 16: Upstream Write Protection."
+            echo ""
+            exit 1
+          fi
+
+          echo "PR originates from this repository -- allowed."
+
+      - name: Verify no AGENT_RULES.md Rule 15/16 removal
+        run: |
+          # Anti-tampering: ensure nobody is trying to remove the
+          # submodule protection rules in AGENT_RULES.md
+          if git diff origin/main...HEAD -- AGENT_RULES.md | grep -qE '^\-.*Rule 1[56]'; then
+            echo ""
+            echo "  BLOCKED: PR attempts to remove or weaken Rule 15 or Rule 16"
+            echo "  These rules protect the AHG submodule architecture."
+            echo "  Removing them requires owner review and manual merge."
+            echo ""
+            exit 1
+          fi
+
+          # Also check for removal of CODEOWNERS
+          if git diff origin/main...HEAD -- .github/CODEOWNERS | grep -qE '^\-.*@stsgs1980'; then
+            echo ""
+            echo "  BLOCKED: PR attempts to remove owner from CODEOWNERS"
+            echo "  This is a tampering attempt."
+            echo ""
+            exit 1
+          fi
+
+          echo "No anti-tampering violations detected."
