@@ -18,7 +18,12 @@ if [ -d "$VERIFY_DOCS_DIR" ] && command -v bun &>/dev/null; then
 
     # Create verify-docs.json if missing
     if [ ! -f "$PROJECT_ROOT/verify-docs.json" ]; then
-        warn "verify-docs.json not found -- create manually or run: bun run $VERIFY_DOCS_DIR/src/init.ts"
+        info "Auto-generating verify-docs.json..."
+        if bun run "$VERIFY_DOCS_DIR/src/cli.ts" --init 2>/dev/null; then
+            ok "verify-docs.json auto-generated"
+        else
+            warn "verify-docs.json auto-generation failed -- create manually: bun run $VERIFY_DOCS_DIR/src/init.ts"
+        fi
     fi
 
     # Add verify-docs to pre-commit hook if not already there

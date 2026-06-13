@@ -23,4 +23,14 @@ fi
 for _f in $STAGE_FILES; do
     git add -- "$_f" 2>/dev/null || true
 done
+
+# Write setup stamp (for post-checkout stale hook detection)
+_AHG_STAMP="$PROJECT_ROOT/.ahg-setup-stamp"
+if [ "$MODULE_ROOT" != "$PROJECT_ROOT" ]; then
+    _stamp_hash="$(cd "$MODULE_ROOT" && git rev-parse HEAD 2>/dev/null || echo "unknown")"
+    echo "commit=$_stamp_hash" > "$_AHG_STAMP"
+    echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$_AHG_STAMP"
+    ok "Setup stamp written (.ahg-setup-stamp)"
+fi
+
 ok "Files added to git staging"

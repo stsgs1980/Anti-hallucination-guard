@@ -1,0 +1,56 @@
+#!/bin/bash
+# anti-hallucination-guard -- post-checkout hook
+# Detects when AHG submodule is updated but hooks/scripts are stale.
+# Runs on every git checkout (branch switch, pull, etc.)
+
+# Only run on branch checkout (not file checkout)
+if [ "${3:-0}" = "0" ]; then
+    exit 0
+fi
+
+# Find AHG module directory
+_AHG_DIR=""
+_PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+
+if [ -f "$_PROJECT_ROOT/.gitmodules" ]; then
+    _sp=$(git -C "$_PROJECT_ROOT" config -f .gitmodules --get-regexp 'path' 2>/dev/null \
+        | grep -i 'anti.hallucination' | awk '{print $2}' | head -1 || true)
+    if [ -n "$_sp" ] && [ -f "$_PROJECT_ROOT/$_sp/setup.sh" ]; then
+        _AHG_DIR="$_PROJECT_ROOT/$_sp"
+    fi
+fi
+
+if [ -z "$_AHG_DIR" ]; then
+    for _c in \
+        "$_PROJECT_ROOT/anti-hallucination-guard" \
+        "$_PROJECT_ROOT/vendor/anti-hallucination-guard" \
+        "$_PROJECT_ROOT/lib/anti-hallucination-guard"; do
+        if [ -d "$_c" ] && [ -f "$_c/setup.sh" ]; then
+            _AHG_DIR="$_c"
+            break
+        fi
+    done
+fi
+
+# Skip if AHG not found (standalone AHG repo or no AHG installed)
+if [ -z "$_AHG_DIR" ]; then
+    exit 0
+fi
+
+# Compare AHG submodule commit hash with the hash stored during last setup
+_AHG_CURRENT_HASH="$(cd "$_AHG_DIR" && git rev-parse HEAD 2>/dev/null || echo "")"
+_AHG_STORED_HASH=""
+_AHG_STAMP="$_PROJECT_ROOT/.ahg-setup-stamp"
+
+if [ -f "$_AHG_STAMP" ]; then
+    _AHG_STORED_HASH=$(grep '^commit=' "$_AHG_STAMP" 2>/dev/null | cut -d= -f2 || echo "")
+fi
+
+if [ -n "$_AHG_CURRENT_HASH" ] && [ -n "$_AHG_STORED_HASH" ] && [ "$_AHG_CURRENT_HASH" != "$_AHG_STORED_HASH" ]; then
+    echo ""
+    echo "  [WARN] AHG submodule updated but hooks/scripts may be stale."
+    echo "  Current:  $(echo "$_AHG_CURRENT_HASH" | cut -c1-8)"
+    echo "  Deployed: $(echo "$_AHG_STORED_HASH" | cut -c1-8)"
+    echo "  Re-run:   bash $_AHG_DIR/setup.sh"
+    echo ""
+fi

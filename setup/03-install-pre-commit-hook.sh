@@ -78,8 +78,31 @@ fi
 
 # Save integrity snapshot after hook installation
 # This snapshot should be committed to git so that tampering is detectable
-if [ -f "$PROJECT_ROOT/scripts/check-hooks-integrity.sh" ]; then
-    bash "$PROJECT_ROOT/scripts/check-hooks-integrity.sh" --snapshot 2>/dev/null && \
+if [ -f "$PROJECT_ROOT/scripts/check-hooks-verify.sh" ]; then
+    bash "$PROJECT_ROOT/scripts/check-hooks-snapshot.sh" --snapshot 2>/dev/null && \
         ok "Integrity snapshot created (commit .ahg-integrity.json to git)" || \
         warn "Could not create integrity snapshot (non-critical)"
+elif [ -f "$PROJECT_ROOT/scripts/check-hooks-integrity.sh" ]; then
+    bash "$PROJECT_ROOT/scripts/check-hooks-integrity.sh" --snapshot 2>/dev/null && \
+        ok "Integrity snapshot created" || \
+        warn "Could not create integrity snapshot (non-critical)"
+fi
+
+# Install post-checkout hook (stale submodule detection)
+_PC_HOOK_SRC="$MODULE_ROOT/.git-hooks/post-checkout"
+_PC_HOOK_DST="$HOOK_DIR/post-checkout"
+if [ -f "$_PC_HOOK_SRC" ]; then
+    if [ -f "$_PC_HOOK_DST" ]; then
+        if grep -q "anti-hallucination-guard" "$_PC_HOOK_DST" 2>/dev/null; then
+            cp "$_PC_HOOK_SRC" "$_PC_HOOK_DST"
+            chmod +x "$_PC_HOOK_DST"
+            ok "post-checkout hook updated"
+        else
+            warn "post-checkout hook exists (foreign) -- not overwriting"
+        fi
+    else
+        cp "$_PC_HOOK_SRC" "$_PC_HOOK_DST"
+        chmod +x "$_PC_HOOK_DST"
+        ok "post-checkout hook installed (stale AHG detection)"
+    fi
 fi
