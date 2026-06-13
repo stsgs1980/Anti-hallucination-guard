@@ -16,14 +16,19 @@ if [ -d "$VERIFY_DOCS_DIR" ] && command -v bun &>/dev/null; then
         ok "tools/verify-docs installed (run: bun run $VERIFY_DOCS_DIR/src/cli.ts)"
     fi
 
-    # Create verify-docs.json if missing
-    if [ ! -f "$PROJECT_ROOT/verify-docs.json" ]; then
+    # Create verify-docs.json if missing (standalone AHG only)
+    # In consumer projects, auto-discovery is too aggressive -- it picks up
+    # the consumer's own version mismatches, which are not AHG's concern.
+    # The pre-commit hook's Phase 3.5 auto-discover handles consumer projects.
+    if [ "$MODULE_ROOT" = "$PROJECT_ROOT" ] && [ ! -f "$PROJECT_ROOT/verify-docs.json" ]; then
         info "Auto-generating verify-docs.json..."
         if bun run "$VERIFY_DOCS_DIR/src/cli.ts" --init 2>/dev/null; then
             ok "verify-docs.json auto-generated"
         else
             warn "verify-docs.json auto-generation failed -- create manually: bun run $VERIFY_DOCS_DIR/src/init.ts"
         fi
+    elif [ "$MODULE_ROOT" != "$PROJECT_ROOT" ] && [ ! -f "$PROJECT_ROOT/verify-docs.json" ]; then
+        info "verify-docs.json not created (consumer project -- pre-commit auto-discover will handle it)"
     fi
 
     # Add verify-docs to pre-commit hook if not already there
