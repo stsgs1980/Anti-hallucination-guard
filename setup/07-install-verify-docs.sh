@@ -1,26 +1,24 @@
 #!/usr/bin/env bash
 # setup/07-install-verify-docs.sh
-# Installs verify-docs tool (optional, requires bun).
-# Also adds verify-docs check to pre-commit hook if verify-docs.json exists.
+# Ensures verify-docs is available for the pre-commit hook.
+#
+# When AHG is a submodule: verify-docs runs from the submodule's copy.
+# No need to copy it to the host project -- just ensure bun deps are installed.
+# When AHG is standalone: verify-docs is already in the module root.
 
 VERIFY_DOCS_DIR="$MODULE_ROOT/tools/verify-docs"
-VERIFY_DOCS_PKG="$PROJECT_ROOT/tools/verify-docs"
 
 if [ -d "$VERIFY_DOCS_DIR" ] && command -v bun &>/dev/null; then
-    if [ -d "$VERIFY_DOCS_PKG" ]; then
-        warn "tools/verify-docs already exists -- skipping"
-    else
-        mkdir -p "$PROJECT_ROOT/tools"
-        cp -r "$VERIFY_DOCS_DIR" "$VERIFY_DOCS_PKG"
-        cd "$VERIFY_DOCS_PKG"
-        bun install 2>/dev/null || true
-        cd "$PROJECT_ROOT"
-        ok "tools/verify-docs installed (run: bun run tools/verify-docs/src/cli.ts)"
+    # Install bun dependencies in the module's verify-docs directory
+    # (needed for both standalone and submodule mode)
+    if [ -f "$VERIFY_DOCS_DIR/package.json" ]; then
+        (cd "$VERIFY_DOCS_DIR" && bun install 2>/dev/null || true)
+        ok "tools/verify-docs installed (run: bun run $VERIFY_DOCS_DIR/src/cli.ts)"
     fi
 
     # Create verify-docs.json if missing
     if [ ! -f "$PROJECT_ROOT/verify-docs.json" ]; then
-        warn "verify-docs.json not found -- create manually or run: bun run tools/verify-docs/src/init.ts"
+        warn "verify-docs.json not found -- create manually or run: bun run $VERIFY_DOCS_DIR/src/init.ts"
     fi
 
     # Add verify-docs to pre-commit hook if not already there
