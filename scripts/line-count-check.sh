@@ -18,6 +18,9 @@ set -euo pipefail
 # -- Configuration (overridable via env) --
 LINE_LIMIT="${LINE_LIMIT:-250}"
 LINE_CHECK_DIR="${LINE_CHECK_DIR:-.}"
+# Guard: empty string is NOT the same as unset -- ${:-} only substitutes on unset/null.
+# When pre-commit passes LINE_CHECK_DIR="" for AHG standalone, find "" fails.
+[ -z "$LINE_CHECK_DIR" ] && LINE_CHECK_DIR="."
 
 # Source file patterns to check (space-separated globs)
 # Covers most common programming languages
@@ -46,6 +49,10 @@ CHECKED=0
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$PROJECT_ROOT"
 
+# Resolve LINE_CHECK_DIR to absolute path for relative-path skip matching
+_lc_base_dir="$(cd "$LINE_CHECK_DIR" 2>/dev/null && pwd || echo "$PROJECT_ROOT")"
+[ -n "$_lc_base_dir" ] || _lc_base_dir="$PROJECT_ROOT"
+
 # Build find command with patterns
 # We use find + file extension matching for cross-platform compatibility
 # IMPORTANT: Disable glob expansion so "*.sh" stays as a pattern for find,
@@ -56,10 +63,17 @@ for GLOB in $LINE_CHECK_GLOB; do
     FIND_NAME="$GLOB"
 
     while IFS= read -r -d '' FILE; do
-        # Skip patterns
+        # Skip patterns -- match against path RELATIVE to LINE_CHECK_DIR,
+        # not the absolute path. When LINE_CHECK_DIR points inside
+        # "anti-hallucination-guard/" (submodule mode), the absolute path
+        # contains "anti-hallucination-guard" which would falsely match
+        # the skip pattern and skip ALL files.
+        REL_PATH="${FILE#$_lc_base_dir}"
+        REL_PATH="${REL_PATH#/}"  # strip leading slash
+
         SKIP_FLAG=0
         for SKIP_PAT in $LINE_CHECK_SKIP; do
-            case "$FILE" in
+            case "$REL_PATH" in
                 *"$SKIP_PAT"*) SKIP_FLAG=1; break ;;
             esac
         done

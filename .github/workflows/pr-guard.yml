@@ -39,7 +39,7 @@ jobs:
               core.setFailed(
                 `PR author @${author} has '${permission}' access. ` +
                 `Only collaborators with 'write' or 'admin' permission may submit PRs to the AHG upstream repository. ` +
-                `Consumer project agents MUST NOT push to AHG (see AGENT_RULES.md Rule 16).`
+                `Consumer project agents MUST NOT push to AHG (see AGENT_RULES.md Rule 17).`
               );
               return;
             }
@@ -58,20 +58,20 @@ jobs:
             echo "  BLOCKED: PR from fork '$PR_HEAD'"
             echo "  The AHG repository does not accept external fork PRs."
             echo "  Consumer projects must NOT modify the AHG upstream."
-            echo "  See AGENT_RULES.md Rule 16: Upstream Write Protection."
+            echo "  See AGENT_RULES.md Rule 17: Upstream Write Protection."
             echo ""
             exit 1
           fi
 
           echo "PR originates from this repository -- allowed."
 
-      - name: Verify no AGENT_RULES.md Rule 15/16 removal
+      - name: Verify no AGENT_RULES.md Rule 16/17 removal
         run: |
           # Anti-tampering: ensure nobody is trying to remove the
           # submodule protection rules in AGENT_RULES.md
-          if git diff origin/main...HEAD -- AGENT_RULES.md | grep -qE '^\-.*Rule 1[56]'; then
+          if git diff origin/main...HEAD -- AGENT_RULES.md | grep -qE '^\-.*Rule 1[67]'; then
             echo ""
-            echo "  BLOCKED: PR attempts to remove or weaken Rule 15 or Rule 16"
+            echo "  BLOCKED: PR attempts to remove or weaken Rule 16 or Rule 17"
             echo "  These rules protect the AHG submodule architecture."
             echo "  Removing them requires owner review and manual merge."
             echo ""

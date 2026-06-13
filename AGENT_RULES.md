@@ -31,7 +31,7 @@
 - [worklog.md format](#worklogmd-format)
 ---
 
-<!-- ID: RULE-017 | ver:1.0 | Level: C | Related: RULE-005, RULE-006 -->
+<!-- ID: RULE-001 | ver:1.0 | Level: C | Related: RULE-006, RULE-007 -->
 ## Rule 1 [C]: ANSWER BEFORE ACT (NO UNSOLICITED ACTION)
 IF ASKED A QUESTION -- ANSWER THE QUESTION. DO NOT START IMPLEMENTING.
 DO NOT CREATE FILES. DO NOT MODIFY CODE. DO NOT COMMIT.
@@ -46,7 +46,7 @@ This rule is the FIRST rule for a reason. Every session, every agent,
 every time. Read it. Follow it.
 
 ---
-<!-- ID: RULE-001 | ver:1.0 | Level: C | Related: RULE-003, RULE-006 -->
+<!-- ID: RULE-002 | ver:1.0 | Level: C | Related: RULE-004, RULE-007 -->
 ## Rule 2 [C]: worklog -- BEFORE and AFTER every action
 
 - Before ANY action: read /worklog.md
@@ -54,21 +54,21 @@ every time. Read it. Follow it.
 - Format: only blocks with --- separator
 - Content: specific facts (files, commands, results)
 
-<!-- ID: RULE-002 | ver:1.0 | Level: C | Related: RULE-009 -->
+<!-- ID: RULE-003 | ver:1.0 | Level: C | Related: RULE-010 -->
 ## Rule 3 [C]: Read before write (READ BEFORE WRITE)
 
 - NEVER write a file without reading it first (Read tool)
 - Exception: if file does not exist (verify via LS/Glob)
 - Reason: without reading, agent risks destroying existing code
 
-<!-- ID: RULE-003 | ver:1.0 | Level: C | Related: RULE-001 -->
+<!-- ID: RULE-004 | ver:1.0 | Level: C | Related: RULE-002 -->
 ## Rule 4 [C]: One logical block -- one commit
 
 - Finished a meaningful chunk of work -> git add -A && git commit
 - Commit message: specific description (not "update", not "fix")
 - Commit without updated worklog -> ERROR (pre-commit hook will block)
 
-<!-- ID: RULE-004 | ver:1.0 | Level: C | Related: RULE-005 -->
+<!-- ID: RULE-005 | ver:1.0 | Level: C | Related: RULE-006 -->
 ## Rule 5 [C]: No loops
 
 - If you are doing the same thing for the 3rd time with the same result -> STOP
@@ -76,7 +76,7 @@ every time. Read it. Follow it.
 - Write in chat: "Stuck on [specific step], need help"
 - This is NOT a failure -- this saves user time
 
-<!-- ID: RULE-005 | ver:1.0 | Level: C | Related: RULE-010 -->
+<!-- ID: RULE-006 | ver:1.0 | Level: C | Related: RULE-011 -->
 ## Rule 6 [C]: Honest reporting
 
 - Do NOT write "work completed" if tests are not passed
@@ -84,7 +84,7 @@ every time. Read it. Follow it.
 - Do NOT write "error fixed" if you did not verify
 - Every claim -> must be verifiable
 
-<!-- ID: RULE-006 | ver:1.0 | Level: W | Related: RULE-001, RULE-003 -->
+<!-- ID: RULE-007 | ver:1.0 | Level: W | Related: RULE-002, RULE-004 -->
 ## Rule 7 [W]: Work structure
 
 1. Read AGENT_RULES.md and worklog.md
@@ -94,7 +94,7 @@ every time. Read it. Follow it.
 5. Git commit
 6. Go to step 2
 
-<!-- ID: RULE-007 | ver:1.0 | Level: C | Related: STD-ENV-001, STD-ENV-002 -->
+<!-- ID: RULE-008 | ver:1.0 | Level: C | Related: STD-ENV-001, STD-ENV-002 -->
 ## Rule 8 [C]: Sandbox verification (no fake setup)
 
 Agents MUST verify sandbox infrastructure is real before proceeding. Known anti-hallucination patterns in Z.ai Sandbox:
@@ -107,7 +107,7 @@ Agents MUST verify sandbox infrastructure is real before proceeding. Known anti-
 
 4. **Editing wrong location is silent failure**: Writing to `/tmp/my-repo/src/app/page.tsx` changes NOTHING visible in the browser. Always confirm you are editing files under `/home/z/my-project/`.
 
-<!-- ID: RULE-008 | ver:1.0 | Level: C | Related: RULE-009, TOOL-VERIFY -->
+<!-- ID: RULE-009 | ver:1.0 | Level: C | Related: RULE-010, TOOL-VERIFY -->
 ## Rule 9 [C]: Session Start Protocol (drift prevention)
 
 Before ANY work in a new session, the agent MUST:
@@ -128,7 +128,7 @@ This rule prevents the most common documentation decay pattern:
 an agent writes code but does not update docs, causing documentation
 to gradually become misleading and unreliable.
 
-<!-- ID: RULE-009 | ver:1.0 | Level: C | Related: RULE-008, TOOL-VERIFY -->
+<!-- ID: RULE-010 | ver:1.0 | Level: C | Related: RULE-009, TOOL-VERIFY -->
 ## Rule 10 [C]: Documentation sync (no code without docs)
 
 When changing the codebase, documentation MUST be kept in sync:
@@ -146,7 +146,7 @@ Pre-commit checklist:
 - [ ] task state file statuses are current?
 - [ ] verify-docs passes without errors?
 
-<!-- ID: RULE-010 | ver:1.0 | Level: C | Related: RULE-005, PROC-SETUP -->
+<!-- ID: RULE-011 | ver:1.0 | Level: C | Related: RULE-006, PROC-SETUP -->
 ## Rule 11 [C]: Integrity protection (no self-sabotage)
 
 Agents MUST NOT disable, bypass, or weaken the anti-hallucination mechanisms.
@@ -173,7 +173,7 @@ This rule is non-negotiable and applies regardless of task urgency.
 - audit.sh scores integrity as part of session quality
 - CI pipeline runs verify-docs independently (cannot be bypassed locally)
 
-<!-- ID: RULE-011 | ver:1.1 | Level: C | Related: RULE-003, PROC-LINECOUNT -->
+<!-- ID: RULE-012 | ver:1.1 | Level: C | Related: RULE-004, PROC-LINECOUNT -->
 ## Rule 12 [C]: Anti-monolith (no file over 250 lines)
 
 Every file MUST stay under 250 lines. When a file crosses this threshold,
@@ -210,7 +210,7 @@ Violations are BLOCKED automatically -- the commit will not succeed.
 - "I'll refactor later" (later never comes)
 - "It's easier to read in one file" (that's what imports are for)
 
-<!-- ID: RULE-012 | ver:1.1 | Level: C | Related: TOOL-BUMP -->
+<!-- ID: RULE-013 | ver:1.1 | Level: C | Related: TOOL-BUMP -->
 ## Rule 13 [C]: Use ahg bump for version updates
 
 When changing the project version, use the atomic bump command:
@@ -226,7 +226,7 @@ Do NOT update versions manually in individual files.
 Manual updates cause version drift -- one file gets updated,
 another is forgotten. ahg bump eliminates this class of errors.
 
-<!-- ID: RULE-013 | ver:1.1 | Level: C | Related: RULE-001, RULE-003, TOOL-VERIFY -->
+<!-- ID: RULE-014 | ver:1.1 | Level: C | Related: RULE-002, RULE-004, TOOL-VERIFY -->
 ## Rule 14 [C]: Pre-commit mandatory checklist
 
 Before EVERY commit, verify ALL of these items:
@@ -241,7 +241,7 @@ Before EVERY commit, verify ALL of these items:
 If ANY item is unclear: run "bash scripts/ahg.sh discover" first.
 Do NOT commit with known documentation drift.
 
-<!-- ID: RULE-014 | ver:1.0 | Level: W | Related: -->
+<!-- ID: RULE-015 | ver:1.0 | Level: W | Related: -->
 ## Rule 15 [W]: No Unicode graphics (UNICODE_POLICY compliance)
 
 All AHG output must comply with No-Unicode Policy v2.1.
@@ -266,7 +266,7 @@ No emoji, no Unicode pictograms, no decorative symbols.
 - AI-agent chat responses: [W] Warning
 - Documentation (.md): regulated by MARKDOWN_STANDARD v2.1
 
-<!-- ID: RULE-015 | ver:1.0 | Level: C | Related: RULE-010, ARCH-SUBMODULE -->
+<!-- ID: RULE-016 | ver:1.0 | Level: C | Related: RULE-011, ARCH-SUBMODULE -->
 ## Rule 16 [C]: AHG submodule is immutable architecture (no removal, no inlining)
 
 The anti-hallucination-guard git submodule is a structural component of this
@@ -316,7 +316,7 @@ action that removes, inlines, or restructures the AHG submodule relationship.
 **The submodule is not causing problems -- bugs in context detection were.
 Those bugs are fixed in the AHG repo. Update the submodule to get fixes.**
 
-<!-- ID: RULE-016 | ver:1.0 | Level: C | Related: RULE-010, RULE-015, ARCH-UPSTREAM -->
+<!-- ID: RULE-017 | ver:1.0 | Level: C | Related: RULE-011, RULE-016, ARCH-UPSTREAM -->
 ## Rule 17 [C]: Upstream write protection (no consumer agent may push to AHG)
 
 No agent running in a consumer project context may push, merge, create PRs,

@@ -137,23 +137,6 @@ ALLOWED=(
     "tools/verify-docs/examples/monorepo/verify-docs.plugins.ts"
 )
 
-# Forbidden patterns
-FORBIDDEN_PATTERNS=(
-    "*.env"
-    "*.log"
-    "*.tmp"
-    "node_modules/"
-    ".next/"
-    "upload/"
-    "download/"
-    "src/"
-    "app/"
-    "public/"
-    "package-lock.json"
-    "tsconfig.json"
-    ".git/modules/"
-)
-
 ERRORS=0
 
 echo "=== validate.sh: repository purity check ==="
@@ -192,9 +175,6 @@ for FILE in $TRACKED_FILES; do
     fi
 done
 
-# (Forbidden patterns are superseded by the whitelist above.
-#  If a path is whitelisted, it is allowed regardless of patterns.)
-
 # Check that all allowed files exist
 for ITEM in "${ALLOWED[@]}"; do
     if [ -e "$MODULE_ROOT/$ITEM" ]; then
@@ -223,7 +203,17 @@ if command -v python3 &>/dev/null; then
             if python3 -c '
 import sys
 prohibited = set()
-for cp in list(range(0x2013, 0x2015)) + list(range(0x2500, 0x2580)) + list(range(0x1F000, 0x1F900)):
+# Em dash, en dash
+for cp in list(range(0x2013, 0x2015)):
+    prohibited.add(chr(cp))
+# Box drawing
+for cp in list(range(0x2500, 0x2580)):
+    prohibited.add(chr(cp))
+# Common emoji ranges
+for cp in (list(range(0x2600, 0x27C0))   # Misc Symbols + Dingbats
+         + list(range(0x1F300, 0x1FA00))  # Misc Symbols/Pictographs + Emoticons + Transport + Supplement
+         + list(range(0x1FA00, 0x1FB00))  # Chess Symbols + Extended Pictographs
+         ):
     prohibited.add(chr(cp))
 with open(sys.argv[1], errors="replace") as f:
     for line in f:

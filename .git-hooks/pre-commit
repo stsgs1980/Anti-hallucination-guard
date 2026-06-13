@@ -173,8 +173,9 @@ if [ ! -f "verify-docs.json" ] && command -v bun &>/dev/null && [ -n "$VD_CLI" ]
         echo "  Fix or create verify-docs.json: bun run $VD_CLI --init"
         echo "  To enforce: run 'bun run $VD_CLI --init' and commit verify-docs.json"
         echo ""
+    else
+        echo "  OK: auto-discover passed"
     fi
-    echo "  OK: auto-discover passed"
 fi
 
 # ---- Phase 4: Anti-monolith check (Rule 12 enforcement) ----
