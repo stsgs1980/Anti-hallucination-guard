@@ -9,9 +9,12 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-VD_CLI="$PROJECT_ROOT/tools/verify-docs/src/cli.ts"
-VD_INIT="$PROJECT_ROOT/tools/verify-docs/src/init.ts"
+MODULE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# Resolve PROJECT_ROOT: if AHG is a submodule, git toplevel = consumer root
+# If standalone, git toplevel = MODULE_ROOT itself
+PROJECT_ROOT="$(git -C "$MODULE_ROOT" rev-parse --show-toplevel 2>/dev/null || echo "$MODULE_ROOT")"
+VD_CLI="$MODULE_ROOT/tools/verify-docs/src/cli.ts"
+VD_INIT="$MODULE_ROOT/tools/verify-docs/src/init.ts"
 
 # -- Verify prerequisites -----------------------------------------------------
 if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
@@ -55,6 +58,7 @@ check_bun() {
 check_vd() {
     if [ ! -f "$VD_CLI" ]; then
         echo "ahg: verify-docs not found at $VD_CLI"
+        echo "     MODULE_ROOT=$MODULE_ROOT"
         echo "     Run: bash anti-hallucination-guard/setup.sh"
         exit 1
     fi

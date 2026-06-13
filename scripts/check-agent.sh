@@ -3,7 +3,10 @@
 # Agent activity monitor.
 # Run: manually or via cron every 10 minutes.
 
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MODULE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# Resolve PROJECT_ROOT: if AHG is a submodule, git toplevel = consumer root
+PROJECT_ROOT="$(git -C "$MODULE_ROOT" rev-parse --show-toplevel 2>/dev/null || echo "$MODULE_ROOT")"
 WORKLOG="$PROJECT_ROOT/worklog.md"
 MAX_IDLE=900  # 15 minutes idle = alert
 LOG="$PROJECT_ROOT/download/agent-monitor.log"
