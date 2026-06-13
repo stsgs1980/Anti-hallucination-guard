@@ -8,14 +8,65 @@ set -euo pipefail
 
 # anti-hallucination-guard marker (for setup.sh detection)
 
-MODULE_DIR="$(git rev-parse --show-toplevel)"
-SCRIPTS_DIR="$MODULE_DIR/scripts"
+# ----------------------------------------------------------------
+# Context detection: find the AHG module directory.
+#
+# BUG FIX: We can NOT use `git rev-parse --show-toplevel` because
+# when AHG is a git submodule, that resolves to the PARENT repo
+# root (the consumer project), not the submodule directory.
+# Instead, we resolve relative to this script's own location.
+# When installed via setup.sh, the hook lives in .git/hooks/pre-push,
+# and AHG scripts are at $PROJECT_ROOT/scripts/ahg.sh (deployed).
+# When in the AHG module repo itself, the hook lives in
+# .git/hooks/pre-push and scripts/ is at the module root.
+# ----------------------------------------------------------------
 
-# Detect context: are we in the AHG module repo or a target project?
-# The AHG module repo has setup.sh in the root.
-if [ -f "$MODULE_DIR/setup.sh" ] && [ -f "$MODULE_DIR/AGENT_RULES.md" ] && [ -f "$MODULE_DIR/.git-hooks/pre-commit" ]; then
-    # We are in the AHG module repo -- run purity check
-    VALIDATE="$SCRIPTS_DIR/validate.sh"
+# Step 1: Resolve the git working tree root (consumer project or standalone repo)
+GIT_ROOT="$(git rev-parse --show-toplevel)"
+
+# Step 2: Find the AHG module directory using marker files.
+# Strategy: check if AHG is a submodule, or if we ARE the AHG repo.
+AHG_MODULE_DIR=""
+
+# Check 1: Is there an AHG submodule under the git root?
+# Look for .gitmodules pointing to anti-hallucination-guard
+if [ -f "$GIT_ROOT/.gitmodules" ]; then
+    _sub_path=""
+    _sub_path=$(git -C "$GIT_ROOT" config -f .gitmodules --get-regexp 'path' 2>/dev/null \
+        | grep -i 'anti.hallucination' | awk '{print $2}' | head -1 || true)
+    if [ -n "$_sub_path" ] && [ -f "$GIT_ROOT/$_sub_path/setup.sh" ]; then
+        AHG_MODULE_DIR="$GIT_ROOT/$_sub_path"
+    fi
+fi
+
+# Check 2: Common submodule locations
+if [ -z "$AHG_MODULE_DIR" ]; then
+    for _candidate in \
+        "$GIT_ROOT/anti-hallucination-guard" \
+        "$GIT_ROOT/vendor/anti-hallucination-guard" \
+        "$GIT_ROOT/lib/anti-hallucination-guard"; do
+        if [ -d "$_candidate" ] && [ -f "$_candidate/setup.sh" ]; then
+            AHG_MODULE_DIR="$_candidate"
+            break
+        fi
+    done
+fi
+
+# Check 3: Are we in the AHG module repo itself?
+# (standalone AHG development -- not a submodule)
+if [ -z "$AHG_MODULE_DIR" ]; then
+    if [ -f "$GIT_ROOT/setup.sh" ] && [ -f "$GIT_ROOT/AGENT_RULES.md" ] && [ -f "$GIT_ROOT/.git-hooks/pre-commit" ]; then
+        AHG_MODULE_DIR="$GIT_ROOT"
+    fi
+fi
+
+# Step 3: Run the appropriate check based on context
+if [ -n "$AHG_MODULE_DIR" ] && [ "$AHG_MODULE_DIR" = "$GIT_ROOT" ]; then
+    # ----------------------------------------------------------
+    # Context: We ARE the AHG module repo (standalone development)
+    # Action: Run purity check (validate.sh)
+    # ----------------------------------------------------------
+    VALIDATE="$AHG_MODULE_DIR/scripts/validate.sh"
     if [ -f "$VALIDATE" ]; then
         if ! bash "$VALIDATE"; then
             echo ""
@@ -25,23 +76,24 @@ if [ -f "$MODULE_DIR/setup.sh" ] && [ -f "$MODULE_DIR/AGENT_RULES.md" ] && [ -f 
         fi
     fi
 
-    # Submodule safety: BLOCK push from inside a consumer project
-    # (i.e., someone cd'd into the submodule and is pushing back to AHG)
-    # Only allow if AHG_MODULE_PUSH=1 is set (explicit opt-in by maintainer)
-    if [ -f "$MODULE_DIR/../.gitmodules" ] || [ -d "$MODULE_DIR/../.git/modules" ]; then
-        if [ "${AHG_MODULE_PUSH:-}" != "1" ]; then
-            echo ""
-            echo "BLOCKED: Pushing from inside a git submodule."
-            echo "  Consumer projects must NOT push to the AHG module."
-            echo "  If you are the maintainer, set AHG_MODULE_PUSH=1:"
-            echo "    AHG_MODULE_PUSH=1 git push"
-            echo ""
-            exit 1
-        fi
+elif [ -n "$AHG_MODULE_DIR" ]; then
+    # ----------------------------------------------------------
+    # Context: AHG is a submodule in a consumer project
+    # Action: Run ahg.sh verify (doc consistency check)
+    #
+    # IMPORTANT: Use the submodule's ahg.sh, NOT the deployed one.
+    # The deployed ahg.sh has MODULE_ROOT = consumer project root,
+    # which means VD_CLI resolves to a non-existent path.
+    # The submodule's ahg.sh correctly resolves MODULE_ROOT to the
+    # AHG module directory where verify-docs actually lives.
+    # ----------------------------------------------------------
+    AHG_SH="$AHG_MODULE_DIR/scripts/ahg.sh"
+    if [ ! -f "$AHG_SH" ]; then
+        # Fallback: deployed scripts at $GIT_ROOT/scripts/ahg.sh
+        # (may not find verify-docs, but better than nothing)
+        AHG_SH="$GIT_ROOT/scripts/ahg.sh"
     fi
-else
-    # We are in a target project -- run doc consistency check instead
-    AHG_SH="$SCRIPTS_DIR/ahg.sh"
+
     if [ -f "$AHG_SH" ] && command -v bun &>/dev/null; then
         echo "pre-push: Running AHG verify..."
         if ! bash "$AHG_SH" verify --ci 2>&1; then
@@ -52,4 +104,15 @@ else
         fi
         echo "pre-push: AHG verify passed."
     fi
+
+else
+    # ----------------------------------------------------------
+    # Context: AHG module not found at all.
+    # This can happen if:
+    #   - The hook was installed but AHG was removed
+    #   - The submodule path is non-standard
+    # Action: Warn but don't block (to avoid breaking existing workflows)
+    # ----------------------------------------------------------
+    echo "pre-push: WARNING - AHG module not found. Skipping AHG checks."
+    echo "  If AHG is installed at a non-standard path, update your hooks."
 fi

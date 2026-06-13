@@ -96,7 +96,11 @@ check_push() {
 case "${1:-audit}" in
     --install)
         info "Installing branch-protect as pre-push guard..."
-        HOOK="$MODULE_ROOT/.git/hooks/pre-push"
+        # Find the real hooks directory. In submodules, .git is a file (not a dir),
+        # so we use git to find the actual git directory.
+        _bp_git_dir=$(git -C "$MODULE_ROOT" rev-parse --git-dir 2>/dev/null || echo ".git")
+        HOOK="$_bp_git_dir/hooks/pre-push"
+        mkdir -p "$_bp_git_dir/hooks" 2>/dev/null || true
 
         if [ -f "$HOOK" ]; then
             if grep -q "branch-protect.sh" "$HOOK" 2>/dev/null; then

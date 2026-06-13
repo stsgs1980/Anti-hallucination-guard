@@ -3,6 +3,7 @@ set -euo pipefail
 
 # verify-docs pre-push template
 # Runs doc consistency check before allowing push.
+# Supports both standalone and submodule (AHG) installations.
 
 echo ""
 echo "Verifying doc consistency before push..."
@@ -10,8 +11,31 @@ echo ""
 
 cd "$(git rev-parse --show-toplevel)"
 
+# Find verify-docs CLI -- it may be at the project root (standalone)
+# or inside an AHG submodule (submodule installation).
+VD_CLI=""
+if [ -f "tools/verify-docs/src/cli.ts" ]; then
+    VD_CLI="tools/verify-docs/src/cli.ts"
+elif [ -f "anti-hallucination-guard/tools/verify-docs/src/cli.ts" ]; then
+    VD_CLI="anti-hallucination-guard/tools/verify-docs/src/cli.ts"
+else
+    # Try .gitmodules to find AHG submodule path
+    if [ -f ".gitmodules" ]; then
+        _vd_sub_path=$(git config -f .gitmodules --get-regexp 'path' 2>/dev/null \
+            | grep -i 'anti.hallucination' | awk '{print $2}' | head -1 || true)
+        if [ -n "$_vd_sub_path" ] && [ -f "$_vd_sub_path/tools/verify-docs/src/cli.ts" ]; then
+            VD_CLI="$_vd_sub_path/tools/verify-docs/src/cli.ts"
+        fi
+    fi
+fi
+
+if [ -z "$VD_CLI" ]; then
+    echo "WARN: verify-docs CLI not found -- skipping doc check"
+    exit 0
+fi
+
 if command -v bun &>/dev/null; then
-  bun run tools/verify-docs/src/cli.ts --ci
+  bun run "$VD_CLI" --ci
 elif command -v npx &>/dev/null; then
   npx verify-docs
 else

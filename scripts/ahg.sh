@@ -13,8 +13,53 @@ MODULE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Resolve PROJECT_ROOT: if AHG is a submodule, git toplevel = consumer root
 # If standalone, git toplevel = MODULE_ROOT itself
 PROJECT_ROOT="$(git -C "$MODULE_ROOT" rev-parse --show-toplevel 2>/dev/null || echo "$MODULE_ROOT")"
-VD_CLI="$MODULE_ROOT/tools/verify-docs/src/cli.ts"
-VD_INIT="$MODULE_ROOT/tools/verify-docs/src/init.ts"
+
+# -- Find the real AHG module directory --------------------------------------
+# When ahg.sh is deployed to a consumer project's scripts/ dir,
+# MODULE_ROOT points to the consumer project root, NOT the AHG module.
+# verify-docs lives inside the AHG module, so we need to find it.
+AHG_MODULE_DIR=""
+
+# Quick check: if MODULE_ROOT has setup.sh, we ARE the AHG module repo
+if [ -f "$MODULE_ROOT/setup.sh" ] && [ -f "$MODULE_ROOT/AGENT_RULES.md" ]; then
+    AHG_MODULE_DIR="$MODULE_ROOT"
+fi
+
+# If not found, search for the AHG submodule in the consumer project
+if [ -z "$AHG_MODULE_DIR" ]; then
+    # Check .gitmodules for AHG submodule path
+    if [ -f "$PROJECT_ROOT/.gitmodules" ]; then
+        _ahg_sp=$(git -C "$PROJECT_ROOT" config -f .gitmodules --get-regexp 'path' 2>/dev/null \
+            | grep -i 'anti.hallucination' | awk '{print $2}' | head -1 || true)
+        if [ -n "$_ahg_sp" ] && [ -f "$PROJECT_ROOT/$_ahg_sp/setup.sh" ]; then
+            AHG_MODULE_DIR="$PROJECT_ROOT/$_ahg_sp"
+        fi
+    fi
+fi
+
+# Check common locations
+if [ -z "$AHG_MODULE_DIR" ]; then
+    for _ahg_c in \
+        "$PROJECT_ROOT/anti-hallucination-guard" \
+        "$PROJECT_ROOT/vendor/anti-hallucination-guard" \
+        "$PROJECT_ROOT/lib/anti-hallucination-guard"; do
+        if [ -d "$_ahg_c" ] && [ -f "$_ahg_c/setup.sh" ]; then
+            AHG_MODULE_DIR="$_ahg_c"
+            break
+        fi
+    done
+fi
+
+# Set VD_CLI/VD_INIT based on the real AHG module location
+if [ -n "$AHG_MODULE_DIR" ]; then
+    VD_CLI="$AHG_MODULE_DIR/tools/verify-docs/src/cli.ts"
+    VD_INIT="$AHG_MODULE_DIR/tools/verify-docs/src/init.ts"
+else
+    # Fallback: use MODULE_ROOT (may be wrong for deployed scripts,
+    # but check_vd() will give a clear error message)
+    VD_CLI="$MODULE_ROOT/tools/verify-docs/src/cli.ts"
+    VD_INIT="$MODULE_ROOT/tools/verify-docs/src/init.ts"
+fi
 
 # -- Verify prerequisites -----------------------------------------------------
 if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
@@ -59,6 +104,11 @@ check_vd() {
     if [ ! -f "$VD_CLI" ]; then
         echo "ahg: verify-docs not found at $VD_CLI"
         echo "     MODULE_ROOT=$MODULE_ROOT"
+        if [ -n "${AHG_MODULE_DIR:-}" ]; then
+            echo "     AHG_MODULE_DIR=$AHG_MODULE_DIR"
+        else
+            echo "     AHG module not found (searched .gitmodules, common paths)"
+        fi
         echo "     Run: bash anti-hallucination-guard/setup.sh"
         exit 1
     fi

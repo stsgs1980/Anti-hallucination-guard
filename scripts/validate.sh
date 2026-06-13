@@ -6,19 +6,53 @@
 
 set -euo pipefail
 
-# Resolve the module repository root (one level up from scripts/).
-# SCRIPT_DIR is kept for file-existence checks in the "allowed files" block.
+# Resolve the module repository root.
+# BUG FIX: Do NOT use `git -C "$SCRIPT_DIR" rev-parse --show-toplevel`
+# because when AHG is a git submodule, that resolves to the PARENT repo
+# root (the consumer project), not the AHG submodule directory.
+# Instead, use SCRIPT_DIR-relative resolution like check-hooks-lib.sh does.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MODULE_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
+MODULE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Guard: validate.sh must only run inside the AHG module repo.
 # If run from a consumer project, ALL consumer files would be flagged FORBIDDEN.
+# We also verify we are NOT inside a submodule of a larger project
+# (pushing from inside a submodule consumer should use AHG_MODULE_PUSH=1).
 if [ ! -f "$MODULE_ROOT/setup.sh" ] || [ ! -f "$MODULE_ROOT/AGENT_RULES.md" ] || [ ! -f "$MODULE_ROOT/.git-hooks/pre-commit" ]; then
     echo "ERROR: validate.sh must run inside the AHG module repo."
     echo "  Current MODULE_ROOT: $MODULE_ROOT"
     echo "  This script checks AHG module purity, not consumer project files."
     echo "  If you see this in a pre-push hook, the hook context detection is broken."
     exit 1
+fi
+
+# Resolve the git working tree root to detect submodule context.
+# In a standalone AHG repo, GIT_ROOT == MODULE_ROOT.
+# In a submodule, GIT_ROOT == the consumer project root.
+GIT_ROOT="$(git -C "$MODULE_ROOT" rev-parse --show-toplevel 2>/dev/null || echo "$MODULE_ROOT")"
+
+# Submodule safety: if AHG is a submodule of a larger project,
+# BLOCK push unless AHG_MODULE_PUSH=1 is explicitly set.
+#
+# DETECTION METHOD: In a git submodule, the .git entry is a FILE
+# (containing a reference like "gitdir: ../.git/modules/xxx"),
+# NOT a directory. In a standalone repo, .git IS a directory.
+# Comparing GIT_ROOT != MODULE_ROOT does NOT work because
+# `git -C <submodule-dir> rev-parse --show-toplevel` returns the
+# submodule's own working tree, NOT the parent repo's root.
+if [ -f "$MODULE_ROOT/.git" ]; then
+    # .git is a file, not a directory -- we are inside a submodule
+    if [ "${AHG_MODULE_PUSH:-}" != "1" ]; then
+        echo ""
+        echo "BLOCKED: Pushing from inside a git submodule."
+        echo "  AHG module directory: $MODULE_ROOT"
+        echo "  Consumer project root: $GIT_ROOT"
+        echo "  Consumer projects must NOT push to the AHG module."
+        echo "  If you are the maintainer, set AHG_MODULE_PUSH=1:"
+        echo "    AHG_MODULE_PUSH=1 git push"
+        echo ""
+        exit 1
+    fi
 fi
 
 # Whitelist of allowed paths

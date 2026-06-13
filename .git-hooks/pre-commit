@@ -104,57 +104,77 @@ fi
 # ---- Phase 3: verify-docs (if configured) ----
 # Runs verify-docs on pre-commit if verify-docs.json exists
 # This catches doc drift BEFORE it gets committed (not just at push)
+#
+# Find the AHG module directory (same discovery logic as pre-push hook).
+# We can NOT rely on hardcoded paths like "anti-hallucination-guard/tools/..."
+# because the AHG module may be at any path (vendor/, lib/, custom name).
+
+_pc_git_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+_pc_ahg_dir=""
+
+# Check .gitmodules for AHG submodule
+if [ -f "$_pc_git_root/.gitmodules" ]; then
+    _pc_sp=$(git -C "$_pc_git_root" config -f .gitmodules --get-regexp 'path' 2>/dev/null \
+        | grep -i 'anti.hallucination' | awk '{print $2}' | head -1 || true)
+    if [ -n "$_pc_sp" ] && [ -f "$_pc_git_root/$_pc_sp/setup.sh" ]; then
+        _pc_ahg_dir="$_pc_git_root/$_pc_sp"
+    fi
+fi
+
+# Check common locations
+if [ -z "$_pc_ahg_dir" ]; then
+    for _pc_c in \
+        "$_pc_git_root/anti-hallucination-guard" \
+        "$_pc_git_root/vendor/anti-hallucination-guard" \
+        "$_pc_git_root/lib/anti-hallucination-guard"; do
+        if [ -d "$_pc_c" ] && [ -f "$_pc_c/setup.sh" ]; then
+            _pc_ahg_dir="$_pc_c"
+            break
+        fi
+    done
+fi
+
+# Check if we ARE the AHG module repo (standalone)
+if [ -z "$_pc_ahg_dir" ] && [ -f "$_pc_git_root/setup.sh" ] && [ -f "$_pc_git_root/AGENT_RULES.md" ]; then
+    _pc_ahg_dir="$_pc_git_root"
+fi
+
+# Resolve verify-docs CLI path from the discovered AHG module
+VD_CLI=""
+if [ -n "$_pc_ahg_dir" ] && [ -f "$_pc_ahg_dir/tools/verify-docs/src/cli.ts" ]; then
+    VD_CLI="$_pc_ahg_dir/tools/verify-docs/src/cli.ts"
+fi
 
 if [ -f "verify-docs.json" ]; then
-    if command -v bun &>/dev/null; then
-        # Find verify-docs CLI (use absolute path for bun module resolution)
-        MODULE_ROOT="$(git rev-parse --show-toplevel)"
-        VD_CLI=""
-        if [ -f "anti-hallucination-guard/tools/verify-docs/src/cli.ts" ]; then
-            VD_CLI="$MODULE_ROOT/anti-hallucination-guard/tools/verify-docs/src/cli.ts"
-        elif [ -f "tools/verify-docs/src/cli.ts" ]; then
-            VD_CLI="$MODULE_ROOT/tools/verify-docs/src/cli.ts"
+    if command -v bun &>/dev/null && [ -n "$VD_CLI" ]; then
+        echo "  Running verify-docs (pre-commit check)..."
+        bun run "$VD_CLI" --ci 2>&1
+        VD_RESULT=$?
+        if [ $VD_RESULT -ne 0 ]; then
+            echo ""
+            echo "  ERROR: verify-docs found mismatches!"
+            echo "  Fix documentation before committing."
+            echo "  Or bypass with: git commit --no-verify (NOT recommended)"
+            echo ""
+            exit 1
         fi
-
-        if [ -n "$VD_CLI" ]; then
-            echo "  Running verify-docs (pre-commit check)..."
-            bun run "$VD_CLI" --ci 2>&1
-            VD_RESULT=$?
-            if [ $VD_RESULT -ne 0 ]; then
-                echo ""
-                echo "  ERROR: verify-docs found mismatches!"
-                echo "  Fix documentation before committing."
-                echo "  Or bypass with: git commit --no-verify (NOT recommended)"
-                echo ""
-                exit 1
-            fi
-            echo "  OK: verify-docs passed"
-        fi
+        echo "  OK: verify-docs passed"
     fi
 fi
 
 # ---- Phase 3.5: auto-discover fallback (if no verify-docs.json) ----
-if [ ! -f "verify-docs.json" ] && command -v bun &>/dev/null; then
-    MODULE_ROOT="$(git rev-parse --show-toplevel)"
-    VD_CLI=""
-    if [ -f "anti-hallucination-guard/tools/verify-docs/src/cli.ts" ]; then
-        VD_CLI="$MODULE_ROOT/anti-hallucination-guard/tools/verify-docs/src/cli.ts"
-    elif [ -f "tools/verify-docs/src/cli.ts" ]; then
-        VD_CLI="$MODULE_ROOT/tools/verify-docs/src/cli.ts"
+if [ ! -f "verify-docs.json" ] && command -v bun &>/dev/null && [ -n "$VD_CLI" ]; then
+    echo "  No verify-docs.json -- running auto-discover..."
+    bun run "$VD_CLI" --discover 2>&1
+    DISCOVER_RESULT=$?
+    if [ $DISCOVER_RESULT -ne 0 ]; then
+        echo ""
+        echo "  ERROR: auto-discover found issues!"
+        echo "  Fix or create verify-docs.json: bun run $VD_CLI --init"
+        echo ""
+        exit 1
     fi
-    if [ -n "$VD_CLI" ]; then
-        echo "  No verify-docs.json -- running auto-discover..."
-        bun run "$VD_CLI" --discover 2>&1
-        DISCOVER_RESULT=$?
-        if [ $DISCOVER_RESULT -ne 0 ]; then
-            echo ""
-            echo "  ERROR: auto-discover found issues!"
-            echo "  Fix or create verify-docs.json: bun run $VD_CLI --init"
-            echo ""
-            exit 1
-        fi
-        echo "  OK: auto-discover passed"
-    fi
+    echo "  OK: auto-discover passed"
 fi
 
 # NOTE: Do NOT add 'exit 0' here.
