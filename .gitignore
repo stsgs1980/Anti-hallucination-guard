@@ -28,6 +28,9 @@
 # Co-change dependency graph
 !.ahg-cochange.json
 
+# Config file
+!.ahgrc
+
 # .github directory (CI workflows + CODEOWNERS)
 !.github/
 !.github/CODEOWNERS
