@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ============================================================
 # anti-hallucination-guard / line-count-check.sh
-# Enforces Rule 11 (anti-monolith): no file over LINE_LIMIT lines.
+# Enforces Rule 12 (anti-monolith): no file over LINE_LIMIT lines.
 #
 # Called from pre-commit hook (Phase 4).
 # Can also be run manually: bash scripts/line-count-check.sh
@@ -90,7 +90,7 @@ for GLOB in $LINE_CHECK_GLOB; do
                 # No exception documented -- violation
                 err "[ANTI-MONOLITH] $FILE is ${LINES} lines (limit: ${LINE_LIMIT})"
                 err "  Split this file or add documented exception comment."
-                err "  Rule 11: one file = one responsibility. Extract sub-modules."
+                err "  Rule 12: one file = one responsibility. Extract sub-modules."
                 VIOLATIONS=$((VIOLATIONS + 1))
             fi
         fi

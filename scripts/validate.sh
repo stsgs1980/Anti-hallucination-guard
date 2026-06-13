@@ -213,7 +213,7 @@ done
 echo ""
 echo "=== Result ==="
 
-# Phase 2: Unicode policy check (Rule 14)
+# Phase 2: Unicode policy check (Rule 15)
 # Uses python3 for portability (grep -P is not available on macOS BSD grep).
 UNICODE_ERRORS=0
 if command -v python3 &>/dev/null; then

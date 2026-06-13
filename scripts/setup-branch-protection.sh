@@ -1,7 +1,7 @@
 #!/bin/bash
 # anti-hallucination-guard / setup-branch-protection.sh
 # Configures GitHub branch protection on the 'main' branch.
-# This is the LAST enforcement layer for Rule 16 (upstream write protection).
+# This is the LAST enforcement layer for Rule 17 (upstream write protection).
 #
 # PREREQUISITES:
 #   1. GitHub CLI (gh) must be installed and authenticated
@@ -91,4 +91,4 @@ echo "  - Merge their own PRs without owner approval"
 echo "  - Force-push or delete the branch"
 echo "  - Bypass Code Owner review"
 echo ""
-echo "Rule 16 enforcement is COMPLETE."
+echo "Rule 17 enforcement is COMPLETE."
