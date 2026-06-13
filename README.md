@@ -48,9 +48,8 @@ git commit -m "feat: add anti-hallucination-guard"
 Updating to latest version:
 ```bash
 bash anti-hallucination-guard/update.sh
-# update.sh does: git pull + setup.sh + reminder to commit
-# After update.sh, commit the submodule pointer in your project:
-git add anti-hallucination-guard && git commit -m "update: anti-hallucination-guard"
+# update.sh does: git pull + setup.sh + cascade-state.json + auto-commit submodule pointer
+# No manual git add/commit needed -- update.sh commits the pointer automatically
 ```
 
 After `git clone` of a project using the guard:
