@@ -46,8 +46,8 @@ CASCADE_HOOK
         fi
     fi
 
-    # AHG rules (1-9) and Cascade rules (C-1 to C-9) coexist in AGENT_RULES.md
-    ok "AHG rules (1-9) and Cascade rules (C-1 to C-9) coexist in AGENT_RULES.md"
+    # AHG rules (1-17) and Cascade rules (C-1 to C-9) coexist in AGENT_RULES.md
+    ok "AHG rules (1-17) and Cascade rules (C-1 to C-9) coexist in AGENT_RULES.md"
     ok "No duplication -- different namespaces (Rule N vs C-N) and separate markers"
 else
     info "No Cascade-guard detected. Standalone mode."

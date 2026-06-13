@@ -77,9 +77,12 @@ ALLOWED=(
     "registry.json"
     ".gitignore"
     ".ahg-cochange.json"
+    ".ahgrc"
+    "verify-docs.json"
     ".git-hooks/"
     ".git-hooks/pre-commit"
     ".git-hooks/pre-push"
+    ".git-hooks/post-checkout"
     ".github/"
     ".github/CODEOWNERS"
     ".github/workflows/"
@@ -135,6 +138,7 @@ ALLOWED=(
     "tools/verify-docs/examples/monorepo/"
     "tools/verify-docs/examples/monorepo/verify-docs.json"
     "tools/verify-docs/examples/monorepo/verify-docs.plugins.ts"
+    "tools/verify-docs/CONSUMER_GUIDE.md"
 )
 
 ERRORS=0

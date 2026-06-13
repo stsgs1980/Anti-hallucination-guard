@@ -28,6 +28,12 @@
 # Co-change dependency graph
 !.ahg-cochange.json
 
+# Config file
+!.ahgrc
+
+# verify-docs config
+!verify-docs.json
+
 # .github directory (CI workflows + CODEOWNERS)
 !.github/
 !.github/CODEOWNERS
@@ -59,6 +65,7 @@
 !tools/verify-docs/examples/
 !tools/verify-docs/examples/**
 !tools/verify-docs/package.json
+!tools/verify-docs/CONSUMER_GUIDE.md
 
 # ---- Explicit re-ignore for generated files inside our directories ----
 # Even though our directories are un-ignored, these must stay ignored:

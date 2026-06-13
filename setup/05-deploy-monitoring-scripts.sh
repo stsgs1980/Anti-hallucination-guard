@@ -55,6 +55,20 @@ deploy_script "check-hooks-verify.sh"
 deploy_script "line-count-check.sh"
 deploy_script "co-change-check.sh"
 
+# -- Deploy .ahgrc config (if not already present) ---------------------------
+if [ "$MODULE_ROOT" != "$PROJECT_ROOT" ]; then
+    _ahgrc_src="$MODULE_ROOT/.ahgrc"
+    _ahgrc_dst="$PROJECT_ROOT/.ahgrc"
+    if [ -f "$_ahgrc_src" ]; then
+        if [ ! -f "$_ahgrc_dst" ]; then
+            cp "$_ahgrc_src" "$_ahgrc_dst"
+            ok ".ahgrc config created (edit to customize line-check settings)"
+        else
+            ok ".ahgrc config already exists (keeping yours)"
+        fi
+    fi
+fi
+
 # Note: .ahg-cochange.json is NOT deployed to consumer projects.
 # It contains AHG-internal co-change rules (AGENT_RULES.md <-> README.md etc.)
 # which are meaningless in consumer project context.

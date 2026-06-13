@@ -216,8 +216,7 @@
       "version": "1.0",
       "level": "critical",
       "related": [
-        "RULE-011",
-        "ARCH-SUBMODULE"
+        "RULE-011"
       ]
     },
     "RULE-017": {
@@ -228,8 +227,7 @@
       "level": "critical",
       "related": [
         "RULE-011",
-        "RULE-016",
-        "ARCH-UPSTREAM"
+        "RULE-016"
       ]
     },
     "STD-ENV-001": {

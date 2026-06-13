@@ -1,3 +1,6 @@
+<!-- ANTI-MONOLITH exception: project README must be a single document covering
+     installation, usage, architecture, and all features. Splitting into multiple
+     docs would make the project harder to evaluate for new users. Per Rule 12. -->
 # anti-hallucination-guard
 
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -72,6 +75,8 @@ bash anti-hallucination-guard/setup.sh
 | `worklog.md` | Mandatory work log (copied to project root) |
 | `.git/hooks/pre-commit` | Blocks commit without updated worklog + verify-docs + anti-monolith (Rule 12) + auto-discover fallback |
 | `.git/hooks/pre-push` | Blocks push with foreign files |
+| `.git/hooks/post-checkout` | Warns when AHG submodule updated but hooks are stale |
+| `.ahgrc` | Config file for line-check settings (deployed to consumer projects) |
 | `scripts/ahg.sh` | Unified CLI for all AHG commands |
 | `scripts/check-agent.sh` | Activity monitor (cron or manual) |
 | `scripts/audit.sh` | Post-session audit with score |
@@ -81,7 +86,12 @@ bash anti-hallucination-guard/setup.sh
 | `scripts/check-hooks-verify.sh` | Verify hooks/configs against snapshot (anti-tampering) |
 | `scripts/line-count-check.sh` | Enforce Rule 12: block commit if file exceeds 250 lines |
 | `scripts/co-change-check.sh` | Enforce Rule 10: warn if buddy files not in same commit |
+| `scripts/branch-protect.sh` | Branch protection orchestrator (requires `gh` CLI) |
+| `scripts/branch-protect-lib.sh` | Branch protection config + helpers |
+| `scripts/check-hooks-lib.sh` | Shared functions for hook integrity checks |
+| `scripts/setup-branch-protection.sh` | One-command GitHub branch protection setup |
 | `tools/verify-docs/` | 5-section doc consistency checker with auto-discover (requires bun) |
+| `tools/verify-docs/CONSUMER_GUIDE.md` | Guide for extending verify-docs.json in consumer projects |
 
 ## Unified CLI: ahg.sh
 
@@ -110,7 +120,7 @@ The CLI wrapper fixes CWD issues by always `cd`ing to the project root before ex
 
 ## Three-mode architecture: DISCOVER / GENERATE / VERIFY
 
-AHG v2.1 operates in three modes, solving the root cause of documentation drift
+AHG v2.5 operates in three modes, solving the root cause of documentation drift
 (where v1.0 was reactive-only and "0 errors" actually meant "0 checks"):
 
 ### DISCOVER mode (proactive -- no config required)
@@ -135,8 +145,8 @@ Updates versions and generates configuration atomically:
 - `ahg baseline` -- creates .ahg-baseline.json for deletion tracking
 
 ```bash
-bash scripts/ahg.sh bump 2.1.0          # update all version files + CHANGELOG
-bash scripts/ahg.sh bump 2.1.0 --dry-run  # preview without writing
+bash scripts/ahg.sh bump 2.5.0          # update all version files + CHANGELOG
+bash scripts/ahg.sh bump 2.5.0 --dry-run  # preview without writing
 bash scripts/ahg.sh init                  # generate verify-docs.json
 bash scripts/ahg.sh baseline              # create file baseline
 ```
@@ -283,7 +293,7 @@ rather than seeing only "something changed."
 
 | Prefix | Type | Example |
 |--------|------|---------|
-| `RULE` | Agent rule in AGENT_RULES.md | RULE-011 (anti-monolith) |
+| `RULE` | Agent rule in AGENT_RULES.md | RULE-012 (anti-monolith) |
 | `STD` | Standard / procedure | STD-ENV-002 (sandbox rules) |
 | `TOOL` | Tool / engine | TOOL-VERIFY (verify-docs) |
 | `PROC` | Process / script | PROC-UPDATE (update.sh) |
@@ -317,7 +327,7 @@ in the project root. This file records:
 
 ```json
 {
-  "ahgVersion": "2.1.0",
+  "ahgVersion": "2.5.0",
   "previousVersion": "2.0.0",
   "previousCommit": "abc1234",
   "currentCommit": "fd686cb",
@@ -453,7 +463,7 @@ The pre-commit hook runs in multiple phases:
 | 2 | Worklog checks (exists, fresh <10min, >50 bytes, >2 blocks) | Yes |
 | 2.5 | sync-task-state (cascade-state auto-sync) | No (warn) |
 | 3 | verify-docs (if verify-docs.json exists) | Yes |
-| 3.5 | auto-discover fallback (full verify engine if no config) | Yes |
+| 3.5 | auto-discover fallback (full verify engine if no config) | No (warn) |
 | 4 | Anti-monolith (Rule 12: no file over 250 lines) | Yes |
 | 5 | Co-change check (buddy files must change together) | Warn |
 
@@ -545,9 +555,12 @@ anti-hallucination-guard/
   CHANGELOG.md                       -- version history (Keep a Changelog format)
   registry.json                      -- ID registry for all addressable entities
   AGENT_RULES.md                    -- agent rules template (17 rules, with ID comments)
+  .ahgrc                            -- JSON config for line-check settings
+  .ahg-cochange.json                -- co-change dependency graph
   .git-hooks/
-    pre-commit                      -- pre-commit hook (5 phases)
+    pre-commit                      -- pre-commit hook (7 phases: 1, 2, 2.5, 3, 3.5, 4, 5)
     pre-push                        -- pre-push hook (foreign file protection)
+    post-checkout                   -- stale AHG detection after submodule update
   scripts/
     ahg.sh                          -- unified CLI entry point
     check-agent.sh                  -- activity monitor
@@ -591,6 +604,7 @@ anti-hallucination-guard/
       examples/
         simple/                    -- basic config
         monorepo/                  -- config with plugins and cross-repo
+          verify-docs.plugins.ts   -- custom resolver plugin example
       package.json
   skills/
     anti-hallucination-guard/

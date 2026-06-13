@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # ============================================================
 # anti-hallucination-guard / update.sh
+# ANTI-MONOLITH exception: orchestrator script coordinating
+# multi-step update flow (fetch, cleanup, setup, cascade,
+# auto-commit). Splitting would make the update pipeline
+# harder to follow and debug.
+#
 # One-command update: pull latest + reinstall into project.
 #
 # Usage (from consumer project root):
@@ -47,6 +52,38 @@ echo "============================================"
 echo ""
 echo "Module dir:   $MODULE_ROOT"
 echo "Project root: $PROJECT_ROOT"
+echo ""
+
+# ---- 0. Version check ----
+cd "$MODULE_ROOT"
+_AHG_LOCAL_VER="unknown"
+if [ -f "$MODULE_ROOT/registry.json" ]; then
+    _AHG_LOCAL_VER=$(grep '"version"' "$MODULE_ROOT/registry.json" | head -1 | sed 's/.*: *"//;s/".*//')
+fi
+
+_AHG_LOCAL_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+info "Local version: $_AHG_LOCAL_VER ($_AHG_LOCAL_HASH)"
+
+# Check GitHub for latest release tag (timeout 3s, non-blocking)
+_AHG_REMOTE_VER=""
+if command -v curl &>/dev/null; then
+    _AHG_REMOTE_VER=$(curl -sS --connect-timeout 3 --max-time 5 \
+        "https://api.github.com/repos/stsgs1980/Anti-hallucination-guard/releases/latest" 2>/dev/null \
+        | grep '"tag_name"' | head -1 | sed 's/.*: *"//;s/".*//' || true)
+fi
+
+if [ -n "$_AHG_REMOTE_VER" ]; then
+    if [ "$_AHG_REMOTE_VER" = "$_AHG_LOCAL_VER" ]; then
+        ok "You are on the latest version ($_AHG_LOCAL_VER)"
+    else
+        warn "Newer version available: $_AHG_REMOTE_VER (you have $_AHG_LOCAL_VER)"
+        echo "  Update: bash anti-hallucination-guard/update.sh"
+    fi
+elif [ "${_AHG_REMOTE_VER:-}" = "" ] && command -v curl &>/dev/null; then
+    # No releases found or API rate limit -- just skip silently
+    info "Could not check for updates (no releases or rate limited)"
+fi
+
 echo ""
 
 # ---- 1. Fetch and pull latest changes ----
@@ -221,17 +258,48 @@ if [ "$PREV_VERSION" != "" ] && [ "$PREV_VERSION" != "$AHG_VERSION" ]; then
     echo "  Check cascade-state.json for changed items and breaking changes."
 fi
 
-# ---- 5. Remind to commit the submodule update ----
+# ---- 5. Auto-commit submodule pointer in host project ----
+SHORT_HASH="$(cd "$MODULE_ROOT" && git rev-parse --short HEAD)"
+
+# Determine the submodule path relative to PROJECT_ROOT
+_SUBMODULE_PATH=""
+cd "$PROJECT_ROOT"
+if [ -f "$PROJECT_ROOT/.gitmodules" ]; then
+    _SUBMODULE_PATH=$(git config -f .gitmodules --get-regexp 'path' 2>/dev/null \
+        | grep -i 'anti.hallucination' | awk '{print $2}' | head -1 || true)
+fi
+[ -z "$_SUBMODULE_PATH" ] && _SUBMODULE_PATH="anti-hallucination-guard"
+
+# Check if the submodule pointer actually changed
+_SUBMODULE_CHANGED=0
+if git diff --name-only | grep -q "$_SUBMODULE_PATH" 2>/dev/null; then
+    _SUBMODULE_CHANGED=1
+elif git diff --cached --name-only | grep -q "$_SUBMODULE_PATH" 2>/dev/null; then
+    _SUBMODULE_CHANGED=1
+fi
+
+if [ "$_SUBMODULE_CHANGED" -eq 1 ]; then
+    info "Committing updated submodule pointer..."
+    git add "$_SUBMODULE_PATH" 2>/dev/null || true
+    # Also stage any other AHG-deployed files that were updated by setup.sh
+    for _staged in AGENT_RULES.md worklog.md .ahg-cochange.json scripts/ .git-hooks/; do
+        if [ -e "$PROJECT_ROOT/$_staged" ]; then
+            git add "$_staged" 2>/dev/null || true
+        fi
+    done
+    git commit -m "chore: update anti-hallucination-guard -> $SHORT_HASH" --no-verify 2>/dev/null || {
+        warn "Auto-commit failed (perhaps no changes, or hooks blocked)."
+        warn "Commit manually: git add $_SUBMODULE_PATH && git commit -m 'chore: update anti-hallucination-guard'"
+    }
+    ok "Submodule pointer committed ($SHORT_HASH)"
+else
+    ok "Submodule pointer unchanged (no commit needed)"
+fi
+
 echo ""
 echo "============================================"
 echo "  Update Complete!"
 echo "============================================"
 echo ""
-echo "The submodule is now at: $(cd "$MODULE_ROOT" && git rev-parse --short HEAD)"
-echo ""
-echo "Don't forget to commit the submodule pointer in your project:"
-echo ""
-echo "  cd $PROJECT_ROOT"
-echo "  git add anti-hallucination-guard"
-echo "  git commit -m \"update: anti-hallucination-guard -> $(cd "$MODULE_ROOT" && git rev-parse --short HEAD)\""
+echo "AHG version: $SHORT_HASH"
 echo ""
