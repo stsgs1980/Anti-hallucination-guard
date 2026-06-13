@@ -36,7 +36,9 @@ deploy_script() {
 }
 
 # -- Deploy all scripts --------------------------------------------------------
-deploy_script "validate.sh"
+# validate.sh is NOT deployed -- it checks AHG module purity,
+# not consumer project files. Running it in a consumer project
+# would flag ALL consumer files as FORBIDDEN.
 deploy_script "check-agent.sh"
 deploy_script "audit.sh"
 deploy_script "sync-task-state.sh"

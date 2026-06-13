@@ -11,6 +11,16 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODULE_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
 
+# Guard: validate.sh must only run inside the AHG module repo.
+# If run from a consumer project, ALL consumer files would be flagged FORBIDDEN.
+if [ ! -f "$MODULE_ROOT/setup.sh" ] || [ ! -f "$MODULE_ROOT/AGENT_RULES.md" ] || [ ! -f "$MODULE_ROOT/.git-hooks/pre-commit" ]; then
+    echo "ERROR: validate.sh must run inside the AHG module repo."
+    echo "  Current MODULE_ROOT: $MODULE_ROOT"
+    echo "  This script checks AHG module purity, not consumer project files."
+    echo "  If you see this in a pre-push hook, the hook context detection is broken."
+    exit 1
+fi
+
 # Whitelist of allowed paths
 ALLOWED=(
     "setup.sh"
