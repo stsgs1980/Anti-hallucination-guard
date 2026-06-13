@@ -10,6 +10,7 @@
 # Can also be run manually: bash scripts/co-change-check.sh
 #
 # Configuration: .ahg-cochange.json in project root
+# Bypass: [no-cochange] in commit message or COCHANGE_BYPASS=1 env
 # ============================================================
 
 set -euo pipefail
@@ -49,9 +50,6 @@ if [ -z "$CONFIG" ]; then
     exit 0
 fi
 
-# -- Mode: warn or block --
-MODE="${COCHANGE_MODE:-warn}"
-
 # -- Get staged files --
 STAGED=$(git diff --cached --name-only 2>/dev/null || echo "")
 if [ -z "$STAGED" ]; then
@@ -59,42 +57,67 @@ if [ -z "$STAGED" ]; then
     exit 0
 fi
 
-# -- Check for [no-cochange] bypass in commit message --
-COMMIT_MSG=""
-if [ -f "$PROJECT_ROOT/.git/COMMIT_EDITMSG" ]; then
-    COMMIT_MSG=$(cat "$PROJECT_ROOT/.git/COMMIT_EDITMSG" 2>/dev/null || echo "")
+# -- Check for [no-cochange] bypass --
+# Supports multiple sources: env var, COMMIT_EDITMSG, or git commit -m message.
+BYPASS=0
+
+# 1. Explicit env var bypass
+if [ "${COCHANGE_BYPASS:-0}" = "1" ]; then
+    BYPASS=1
 fi
-if echo "$COMMIT_MSG" | grep -qi "\[no-cochange\]"; then
-    ok "[co-change] Bypass: [no-cochange] in commit message"
+
+# 2. Check COMMIT_EDITMSG (works for editor-based commits)
+if [ "$BYPASS" -eq 0 ] && [ -f "$PROJECT_ROOT/.git/COMMIT_EDITMSG" ]; then
+    if grep -qi "\[no-cochange\]" "$PROJECT_ROOT/.git/COMMIT_EDITMSG" 2>/dev/null; then
+        BYPASS=1
+    fi
+fi
+
+# 3. Check COCHANGE_COMMIT_MSG env var (for git commit -m style)
+#    Pre-commit hook can set this before calling this script.
+if [ "$BYPASS" -eq 0 ] && [ -n "${COCHANGE_COMMIT_MSG:-}" ]; then
+    if echo "$COCHANGE_COMMIT_MSG" | grep -qi "\[no-cochange\]"; then
+        BYPASS=1
+    fi
+fi
+
+if [ "$BYPASS" -eq 1 ]; then
+    ok "[co-change] Bypass: [no-cochange] detected"
     exit 0
 fi
 
-# -- Parse config and check --
-VIOLATIONS=0
-WARNINGS=0
-
-# Use python3 to parse JSON config
+# -- Use python3 to parse JSON config and check --
 if ! command -v python3 &>/dev/null; then
     # No python3 -> skip
     exit 0
 fi
 
+# Write staged files to a temp file to avoid env var size limits
+# and newline-in-filename issues.
+_tmpfile=$(mktemp)
+echo "$STAGED" > "$_tmpfile"
+
 # Export variables for python3
 export COCHANGE_CONFIG="$CONFIG"
-export COCHANGE_STAGED="$STAGED"
-export COCHANGE_MODE="$MODE"
+export COCHANGE_STAGED_FILE="$_tmpfile"
 
 python3 -c '
-import json, sys, os
+import json, sys, os, fnmatch
 
 config_path = os.environ.get("COCHANGE_CONFIG", "")
-staged_raw = os.environ.get("COCHANGE_STAGED", "")
-mode = os.environ.get("COCHANGE_MODE", "warn")
+staged_file = os.environ.get("COCHANGE_STAGED_FILE", "")
 
 if not config_path:
     sys.exit(0)
 
-staged = set(staged_raw.strip().split("\n")) if staged_raw.strip() else set()
+# Read staged files from temp file (handles newlines in filenames)
+staged = set()
+if staged_file and os.path.isfile(staged_file):
+    with open(staged_file) as f:
+        for line in f:
+            staged.add(line.rstrip("\n"))
+elif not staged_file:
+    sys.exit(0)
 
 with open(config_path) as f:
     config = json.load(f)
@@ -110,11 +133,11 @@ for pair in pairs:
     message = pair.get("message", "")
 
     # Check if any staged file matches the trigger pattern
+    # Note: fnmatch * matches across directory separators,
+    # so "scripts/*" will match "scripts/sub/deep/file.sh"
     triggered = False
     for s in staged:
         if "*" in trigger:
-            # Glob pattern: use fnmatch
-            import fnmatch
             if fnmatch.fnmatch(s, trigger):
                 triggered = True
                 break
@@ -131,7 +154,6 @@ for pair in pairs:
     for buddy in buddies:
         found = False
         if "*" in buddy:
-            import fnmatch
             for s in staged:
                 if fnmatch.fnmatch(s, buddy):
                     found = True
@@ -143,21 +165,23 @@ for pair in pairs:
             missing.append(buddy)
 
     if missing:
-        sev_label = severity
         if severity == "block":
             violations += 1
         else:
             warnings += 1
 
-        print("  [%s] Trigger: %s" % (sev_label.upper(), trigger))
+        print("  [%s] Trigger: %s" % (severity.upper(), trigger))
         print("    Missing buddy files: %s" % ", ".join(missing))
         if message:
             print("    %s" % message)
 
-# Output result
+# Output result:
+# - violations (block) -> exit 2 (signals hard block)
+# - warnings only     -> exit 0 (non-blocking)
+# - all good          -> exit 0
 if violations > 0:
     print("\n  CO-CHANGE BLOCKED: %d required buddy file(s) not in commit." % violations)
-    sys.exit(1)
+    sys.exit(2)
 elif warnings > 0:
     print("\n  CO-CHANGE WARNING: %d buddy file(s) not in commit." % warnings)
     print("  Consider updating the listed files before committing.")
@@ -168,11 +192,24 @@ else:
 '
 
 result=$?
-if [ $result -ne 0 ] && [ "$MODE" = "block" ]; then
+
+# Clean up temp file
+rm -f "$_tmpfile" 2>/dev/null || true
+
+# Exit code semantics:
+#   0 = pass (all buddies present, or only warnings)
+#   2 = blocked (severity=block violations found)
+#   1 = python error (unexpected)
+if [ "$result" -eq 2 ]; then
     echo ""
     err "Co-change violations found. Commit blocked."
     err "Add missing buddy files or use [no-cochange] in commit message."
     exit 1
+elif [ "$result" -eq 1 ]; then
+    # Unexpected python error -- warn but don't block
+    warn "co-change-check: unexpected error (exit code 1)"
+    exit 0
 fi
 
-exit $result
+# result=0 -> all good or only warnings
+exit 0

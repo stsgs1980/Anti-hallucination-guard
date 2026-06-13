@@ -214,16 +214,31 @@ echo ""
 echo "=== Result ==="
 
 # Phase 2: Unicode policy check (Rule 14)
+# Uses python3 for portability (grep -P is not available on macOS BSD grep).
 UNICODE_ERRORS=0
-while IFS= read -r FILE; do
-    if [ -f "$MODULE_ROOT/$FILE" ]; then
-        # Check for prohibited Unicode: em dash, en dash, box drawing
-        if grep -Pq '[\x{2014}\x{2013}\x{2500}-\x{257F}\x{1F000}-\x{1FFFF}]' "$MODULE_ROOT/$FILE" 2>/dev/null; then
-            echo "[-] UNICODE POLICY: $FILE contains prohibited Unicode characters"
-            UNICODE_ERRORS=$((UNICODE_ERRORS + 1))
+if command -v python3 &>/dev/null; then
+    while IFS= read -r FILE; do
+        if [ -f "$MODULE_ROOT/$FILE" ]; then
+            # Check for prohibited Unicode: em dash, en dash, box drawing, emoji
+            if python3 -c '
+import sys
+prohibited = set()
+for cp in list(range(0x2013, 0x2015)) + list(range(0x2500, 0x2580)) + list(range(0x1F000, 0x1F900)):
+    prohibited.add(chr(cp))
+with open(sys.argv[1], errors="replace") as f:
+    for line in f:
+        if any(c in prohibited for c in line):
+            sys.exit(1)
+sys.exit(0)
+' "$MODULE_ROOT/$FILE" 2>/dev/null; then
+                :
+            else
+                echo "[-] UNICODE POLICY: $FILE contains prohibited Unicode characters"
+                UNICODE_ERRORS=$((UNICODE_ERRORS + 1))
+            fi
         fi
-    fi
-done < <(git -C "$MODULE_ROOT" ls-files)
+    done < <(git -C "$MODULE_ROOT" ls-files)
+fi
 
 if [ "$UNICODE_ERRORS" -gt 0 ]; then
     echo ""

@@ -364,10 +364,11 @@ Example task structure in state file:
 }
 ```
 
-## AGENT_RULES.md (15 Rules)
+## AGENT_RULES.md (17 Rules)
 
 | Rule | Purpose |
 |------|---------|
+| Rule 17 | **Answer before act** (no unsolicited action) |
 | Rule 1 | worklog -- BEFORE and AFTER every action |
 | Rule 2 | Read before write |
 | Rule 3 | One logical block -- one commit |
@@ -382,7 +383,8 @@ Example task structure in state file:
 | Rule 12 | **ahg bump** (atomic version updates, no manual edits) |
 | Rule 13 | **Pre-commit checklist** (mandatory before every commit) |
 | Rule 14 | **UNICODE_POLICY** (ASCII-only output, no emoji, no Unicode graphics) |
-| Rule 17 | **Answer before act** (no unsolicited action) |
+| Rule 15 | **AHG submodule is immutable** (no removal, no inlining) |
+| Rule 16 | **Upstream write protection** (no consumer agent may push to AHG) |
 
 ### Rule 8: Session Start Protocol
 
