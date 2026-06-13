@@ -24,7 +24,7 @@ LINE_CHECK_DIR="${LINE_CHECK_DIR:-.}"
 LINE_CHECK_GLOB="${LINE_CHECK_GLOB:-*.js *.ts *.jsx *.tsx *.py *.go *.rs *.java *.rb *.sh *.bash *.zsh *.c *.cpp *.h *.hpp *.cs *.php *.swift *.kt *.scala}"
 
 # Patterns to skip (grep -v patterns)
-LINE_CHECK_SKIP="${LINE_CHECK_SKIP:-node_modules|.git|vendor|dist|build|.next|coverage|__pycache__|anti-hallucination-guard}"
+LINE_CHECK_SKIP="${LINE_CHECK_SKIP:-node_modules .git vendor dist build .next coverage __pycache__ anti-hallucination-guard}"
 
 # -- Colors --
 RED='\033[0;31m'
