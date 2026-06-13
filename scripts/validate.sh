@@ -93,6 +93,7 @@ ALLOWED=(
     "scripts/check-hooks-lib.sh"
     "scripts/check-hooks-snapshot.sh"
     "scripts/check-hooks-verify.sh"
+    "scripts/line-count-check.sh"
     "scripts/setup-branch-protection.sh"
     "skills/"
     "skills/anti-hallucination-guard/"

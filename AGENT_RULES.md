@@ -125,11 +125,14 @@ This rule is non-negotiable and applies regardless of task urgency.
 - audit.sh scores integrity as part of session quality
 - CI pipeline runs verify-docs independently (cannot be bypassed locally)
 
-<!-- ID: RULE-011 | ver:1.0 | Level: C | Related: RULE-003 -->
+<!-- ID: RULE-011 | ver:1.1 | Level: C | Related: RULE-003, PROC-LINECOUNT -->
 ## Rule 11: Anti-monolith (no file over 250 lines)
 
 Every file MUST stay under 250 lines. When a file crosses this threshold,
 the agent MUST stop writing, split the file, and continue with smaller modules.
+
+**This rule is enforced by the pre-commit hook (Phase 4).**
+Violations are BLOCKED automatically -- the commit will not succeed.
 
 **Thresholds:**
 - File: 250 lines hard limit (150 recommended)
@@ -345,4 +348,4 @@ Stage Summary:
 
 ---
 
-v2.3.0 | 2026-06-13 | anti-hallucination-guard
+v2.4.0 | 2026-06-14 | anti-hallucination-guard

@@ -1,6 +1,6 @@
 {
-  "version": "2.2.0",
-  "updated": "2026-06-13",
+  "version": "2.4.0",
+  "updated": "2026-06-14",
   "description": "ID registry for anti-hallucination-guard. Each entry is an addressable entity that consumer projects may depend on.",
   "items": {
     "RULE-001": {
@@ -87,9 +87,9 @@
       "file": "AGENT_RULES.md",
       "anchor": "rule-11-anti-monolith-no-file-over-250-lines",
       "title": "Anti-monolith (no file over 250 lines)",
-      "version": "1.0",
+      "version": "1.1",
       "level": "critical",
-      "related": ["RULE-003"]
+      "related": ["RULE-003", "PROC-LINECOUNT"]
     },
     "RULE-012": {
       "file": "AGENT_RULES.md",
@@ -175,9 +175,17 @@
       "file": "scripts/validate.sh",
       "anchor": "",
       "title": "Repository purity + Unicode policy checker",
-      "version": "2.0",
+      "version": "2.1",
       "level": "warning",
       "related": []
+    },
+    "PROC-LINECOUNT": {
+      "file": "scripts/line-count-check.sh",
+      "anchor": "",
+      "title": "Anti-monolith enforcement (Rule 11 hook)",
+      "version": "1.0",
+      "level": "critical",
+      "related": ["RULE-011"]
     }
   }
 }

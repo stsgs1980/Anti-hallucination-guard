@@ -3,6 +3,33 @@
 All notable changes to anti-hallucination-guard are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [2.4.0] - 2026-06-14
+
+### Added
+
+- line-count-check.sh: automatic enforcement of Rule 11 (anti-monolith).
+  Blocks commit if any source file exceeds 250 lines (configurable via
+  LINE_LIMIT env var). Hard cap at 400 lines (no exceptions).
+  Supports documented exceptions via `ANTI-MONOLITH exception` comment
+  in file header.
+- Pre-commit hook Phase 4: automatically runs line-count-check.sh
+  on every commit, making Rule 11 physically enforced instead of
+  a manual guideline.
+- setup/05-deploy-monitoring-scripts.sh: now deploys line-count-check.sh
+  to consumer project's scripts/ directory.
+
+### Changed
+
+- validate.sh whitelist: added scripts/line-count-check.sh
+- Pre-commit hook: added Phase 4 (anti-monolith) after verify-docs
+
+### Security
+
+- Rule 11 is now enforced at hook level. Agents cannot commit files
+  exceeding line limits, even if they ignore the rule in AGENT_RULES.md.
+  This closes the "rules without hooks are wishes" gap identified by
+  consumer project agents.
+
 ## [2.3.0] - 2026-06-13
 
 ### Added

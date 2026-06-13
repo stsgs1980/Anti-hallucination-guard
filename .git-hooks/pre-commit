@@ -177,5 +177,35 @@ if [ ! -f "verify-docs.json" ] && command -v bun &>/dev/null && [ -n "$VD_CLI" ]
     echo "  OK: auto-discover passed"
 fi
 
+# ---- Phase 4: Anti-monolith check (Rule 11 enforcement) ----
+# Checks that no source file exceeds the line limit (default: 250).
+# Configurable via env: LINE_LIMIT, LINE_CHECK_DIR, LINE_CHECK_GLOB, LINE_CHECK_SKIP.
+# Looks for the script in: project scripts/, AHG module scripts/, or common paths.
+
+_lc_script=""
+# 1. Project-level scripts/ (deployed by setup.sh)
+if [ -f "scripts/line-count-check.sh" ]; then
+    _lc_script="scripts/line-count-check.sh"
+# 2. AHG module scripts/ (if running in AHG standalone repo)
+elif [ -n "$_pc_ahg_dir" ] && [ -f "$_pc_ahg_dir/scripts/line-count-check.sh" ]; then
+    _lc_script="$_pc_ahg_dir/scripts/line-count-check.sh"
+fi
+
+if [ -n "$_lc_script" ]; then
+    echo "  Running anti-monolith check (Rule 11)..."
+    bash "$_lc_script" 2>&1
+    _lc_result=$?
+    if [ $_lc_result -ne 0 ]; then
+        echo ""
+        echo "  ERROR: Anti-monolith violations found!"
+        echo "  Decompose files to stay under the line limit."
+        echo "  Rule 11: one file = one responsibility."
+        echo ""
+        exit 1
+    fi
+else
+    echo "  SKIP: line-count-check.sh not found (Rule 11 enforcement not deployed)"
+fi
+
 # NOTE: Do NOT add 'exit 0' here.
 # Other modules (cascade-guard, verify-docs) append their checks after this block.
