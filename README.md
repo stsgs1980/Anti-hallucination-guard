@@ -1,7 +1,7 @@
 # anti-hallucination-guard
 
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version 2.1.0](https://img.shields.io/badge/v2.1.0-2026--06--13-green.svg)]()
+[![Version 2.2.0](https://img.shields.io/badge/v2.2.0-2026--06--13-green.svg)]()
 [![Bash](https://img.shields.io/badge/Shell-Bash-4EAA25.svg?logo=gnu-bash&logoColor=white)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-verify--docs-3178C6.svg?logo=typescript&logoColor=white)]()
 [![Git Hooks](https://img.shields.io/badge/Git-Hooks-FF6600.svg?logo=git&logoColor=white)]()
