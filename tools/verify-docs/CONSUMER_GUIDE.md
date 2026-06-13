@@ -29,6 +29,13 @@ The fix is not to change the tool — it already supports multi-doc coverage
 through `docCoverage`, `versionSync`, and `featureStatus`. You just need to
 configure it.
 
+**Important limitation:** Section 1 `checks` compare code counts against the
+`"readme"` file only — they cannot compare against WORKFLOW.md or other docs.
+To protect non-README documentation, use:
+- `docCoverage` — verify that code files are mentioned in any doc file
+- `versionSync` — verify version numbers across any files
+- `featureStatus` — detect stub markers in any doc file
+
 ---
 
 ## Section 1: Code Counts vs Docs

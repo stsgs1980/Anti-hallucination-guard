@@ -16,3 +16,8 @@ Stage Summary:
 ---
 # test
 # test change for auto-commit
+
+---
+Task ID: consumer-guide
+Agent: main
+Task: Test and verify CONSUMER_GUIDE.md
