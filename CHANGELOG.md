@@ -3,6 +3,10 @@
 All notable changes to anti-hallucination-guard are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [2.2.0] - 2026-06-13
+
+- 
+
 ## [2.1.0] - 2026-06-13
 
 ### Added

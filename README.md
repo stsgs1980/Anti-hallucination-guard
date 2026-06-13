@@ -592,4 +592,4 @@ anti-hallucination-guard/
 
 ---
 
-v2.1.0 | 2026-06-13 | MIT
+v2.2.0 | 2026-06-13 | MIT
