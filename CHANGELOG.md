@@ -3,6 +3,56 @@
 All notable changes to anti-hallucination-guard are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [2.5.0] - 2026-06-14
+
+### Changed
+
+- AGENT_RULES.md: added H1 title, Quick Reference block (5 critical rules),
+  Table of Contents with anchor links, visual [C]/[W] severity markers in
+  rule headings (previously only in HTML ID comments), ANTI-MONOLITH exception
+  comment for line-count compliance. Removed stray "test" text.
+- registry.json: updated all anchors to match new heading format (rule-N-c/w-...).
+  Added RULE-015 and RULE-016 entries. Version bumped to 2.5.0.
+- README.md: added [C]/[W] Level column to rules table, fixed "14 rules" to
+  "17 rules" in two locations. Version bumped to 2.5.0.
+
+## [2.4.0] - 2026-06-14
+
+### Added
+
+- co-change-check.sh: detects that buddy files change together.
+  If file A changes, file B should also change in the same commit.
+  Config via .ahg-cochange.json in project root. Pre-commit Phase 5.
+  Bypass: [no-cochange] in commit message.
+- line-count-check.sh: automatic enforcement of Rule 11 (anti-monolith).
+  Blocks commit if any source file exceeds 250 lines (configurable via
+  LINE_LIMIT env var). Hard cap at 400 lines (no exceptions).
+  Supports documented exceptions via `ANTI-MONOLITH exception` comment
+  in file header.
+- Pre-commit hook Phase 4: line-count check (anti-monolith).
+- Pre-commit hook Phase 5: co-change buddy detection.
+- Rule 17 (RULE-017): Answer before act -- agents MUST answer questions
+  before taking action. No unsolicited implementation.
+- .ahg-cochange.json: default co-change dependency graph for AHG files
+  (AGENT_RULES.md <-> README.md, registry.json, CHANGELOG.md, worklog.md;
+  scripts/* <-> CHANGELOG.md; .git-hooks/* <-> CHANGELOG.md).
+- setup/05-deploy-monitoring-scripts.sh: deploys line-count-check.sh,
+  co-change-check.sh, and .ahg-cochange.json to consumer projects.
+
+### Changed
+
+- Rule 11 (RULE-011): annotated as hook-enforced (Phase 4)
+- validate.sh whitelist: added line-count-check.sh, co-change-check.sh
+- Pre-commit hook: added Phase 4 (anti-monolith) and Phase 5 (co-change)
+
+### Security
+
+- Rule 11 is now enforced at hook level. Agents cannot commit files
+  exceeding line limits, even if they ignore the rule in AGENT_RULES.md.
+- Co-change detection catches documentation drift at commit time:
+  if AGENT_RULES.md changes but README.md does not, the agent is warned.
+- Rule 17 prevents agents from implementing without being asked.
+
 ## [2.3.0] - 2026-06-13
 
 ### Added

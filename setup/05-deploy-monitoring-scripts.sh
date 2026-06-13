@@ -17,6 +17,12 @@ deploy_script() {
         return
     fi
 
+    # Skip if SRC and DST are the same file (running in AHG standalone repo)
+    if [ "$SRC" = "$DST" ]; then
+        ok "scripts/$NAME is module source -- skip copy"
+        return
+    fi
+
     if [ -f "$DST" ]; then
         # Check if it's our file (deployed by AHG previously)
         if grep -q "anti-hallucination-guard\|verify-docs" "$DST" 2>/dev/null; then
@@ -46,3 +52,11 @@ deploy_script "ahg.sh"
 deploy_script "check-hooks-lib.sh"
 deploy_script "check-hooks-snapshot.sh"
 deploy_script "check-hooks-verify.sh"
+deploy_script "line-count-check.sh"
+deploy_script "co-change-check.sh"
+
+# Note: .ahg-cochange.json is NOT deployed to consumer projects.
+# It contains AHG-internal co-change rules (AGENT_RULES.md <-> README.md etc.)
+# which are meaningless in consumer project context.
+# Consumer projects should create their own .ahg-cochange.json if they want
+# co-change detection for their own files.

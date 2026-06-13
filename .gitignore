@@ -25,6 +25,9 @@
 !setup/**
 !update.sh
 
+# Co-change dependency graph
+!.ahg-cochange.json
+
 # .github directory (CI workflows + CODEOWNERS)
 !.github/
 !.github/CODEOWNERS
@@ -66,3 +69,4 @@ bun.lockb
 *.swp
 *.swo
 *~
+worklog.md

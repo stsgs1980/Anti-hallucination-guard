@@ -1,0 +1,42 @@
+{
+  "description": "Co-change dependency graph. If trigger file changes, buddy files should also change.",
+  "version": "2.5.0",
+  "pairs": [
+    {
+      "trigger": "AGENT_RULES.md",
+      "expect": ["README.md", "registry.json", "CHANGELOG.md"],
+      "severity": "warn",
+      "message": "Rules changed -> README, registry, and CHANGELOG should update together"
+    },
+    {
+      "trigger": "AGENT_RULES.md",
+      "expect": ["worklog.md"],
+      "severity": "warn",
+      "message": "Rules changed -> worklog should record what changed"
+    },
+    {
+      "trigger": "registry.json",
+      "expect": ["CHANGELOG.md"],
+      "severity": "warn",
+      "message": "Registry changed -> CHANGELOG should document the change"
+    },
+    {
+      "trigger": "setup.sh",
+      "expect": ["CHANGELOG.md"],
+      "severity": "warn",
+      "message": "Setup changed -> CHANGELOG should document the change"
+    },
+    {
+      "trigger": "scripts/*",
+      "expect": ["CHANGELOG.md"],
+      "severity": "warn",
+      "message": "Script changed -> CHANGELOG should document the change"
+    },
+    {
+      "trigger": ".git-hooks/*",
+      "expect": ["CHANGELOG.md"],
+      "severity": "warn",
+      "message": "Hook changed -> CHANGELOG should document the change"
+    }
+  ]
+}
