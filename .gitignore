@@ -15,6 +15,7 @@
 
 # Then, un-ignore our module files
 !.gitignore
+!.gitattributes
 !README.md
 !CHANGELOG.md
 !registry.json
