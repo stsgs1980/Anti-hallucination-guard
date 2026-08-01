@@ -76,6 +76,7 @@ ALLOWED=(
     "CHANGELOG.md"
     "registry.json"
     ".gitignore"
+    ".gitattributes"
     ".ahg-cochange.json"
     ".ahgrc"
     "verify-docs.json"
