@@ -622,6 +622,7 @@ anti-hallucination-guard/
         discover-coverage.ts       -- find doc coverage gaps
         discover-baseline.ts       -- create/check file baselines
         bump.ts                    -- version bump
+        bump-changelog.ts          -- CHANGELOG entry for a bump
       templates/
         pre-push                   -- hook template for verify-docs
         verify.yml                 -- GitHub Actions workflow

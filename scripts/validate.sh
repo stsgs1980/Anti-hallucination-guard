@@ -130,6 +130,7 @@ ALLOWED=(
     "tools/verify-docs/src/discover-baseline.ts"
     "tools/verify-docs/src/discover.ts"
     "tools/verify-docs/src/bump.ts"
+    "tools/verify-docs/src/bump-changelog.ts"
     "tools/verify-docs/package.json"
     "tools/verify-docs/tests/"
     "tools/verify-docs/tests/_helpers.ts"

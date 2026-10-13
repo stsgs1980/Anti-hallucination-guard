@@ -82,3 +82,21 @@ describe("bump: dry run", () => {
     expect(read(dir, "package.json")).toContain('"version": "9.9.9"');
   });
 });
+
+describe("bump: several occurrences in one file", () => {
+  test("updates every occurrence, not just the first match", () => {
+    const dir = pool.make({
+      "package.json": '{\n  "name": "fixture",\n  "version": "9.9.9"\n}\n',
+      "README.md":
+        "# App\n\n![v](https://img.shields.io/badge/v9.9.9-x-green.svg)\n\n| v9.9.9 | current |\n",
+    });
+
+    const result = bumpVersion(dir, "2.0.0");
+    const readme = read(dir, "README.md");
+
+    expect(readme).not.toContain("9.9.9");
+    expect(readme).toContain("badge/v2.0.0-x-green.svg");
+    expect(readme).toContain("| v2.0.0 | current |");
+    expect(result.failed).toEqual([]);
+  });
+});

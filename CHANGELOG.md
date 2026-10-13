@@ -22,6 +22,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
   whole source string as capture groups, appending the offset to the new version
   ("version: 9.9.9" bumped to 2.0.0 became "version: 2.0.06") and pasting the
   file content back into itself for the group-less generic pattern.
+- verify-docs bump.ts: only the first matching notation inside a file was
+  updated, so a README could keep the old version in its badge while the table
+  row was bumped -- and the command still reported success. Every notation is
+  applied globally now.
 - verify-docs verify-section3.ts: a version target listed in the config but
   missing from disk was reported as "skip" and did not count as an error. It is
   an error now; set "optional": true to keep the old behaviour.
@@ -46,6 +50,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- verify-docs: CHANGELOG entry creation moved from bump.ts into
+  bump-changelog.ts, so bump.ts stays inside the Rule 12 line limit.
 - README.md and AGENT_RULES.md: dropped the "atomic" wording for `ahg bump`.
   The bump computes every replacement before writing anything and reports a
   failed write instead of hiding it, but a filesystem cannot roll back several

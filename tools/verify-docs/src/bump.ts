@@ -11,10 +11,11 @@
 // A write that fails halfway is reported in BumpResult.failed, never hidden.
 // ============================================================================
 
-import { readFileSync, writeFileSync, existsSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { discoverVersions } from "./discover-versions.js";
 import { discoverChangelog } from "./discover-changelog.js";
+import { addChangelogEntry } from "./bump-changelog.js";
 
 // -- Result types ------------------------------------------------------------
 
@@ -37,15 +38,18 @@ export interface BumpResult {
 function versionPatterns(oldVersion: string): RegExp[] {
   const escaped = oldVersion.replace(/\./g, "\\.");
 
+  // Every pattern is global: a single file can carry the version several
+  // times (badge, table row, example command), and leaving one of them behind
+  // is exactly the version drift this tool exists to prevent.
   return [
     // "version": "OLD" -> "version": "NEW" (JSON)
-    new RegExp(`("version"\\s*:\\s*")${escaped}(")`),
+    new RegExp(`("version"\\s*:\\s*")${escaped}(")`, "g"),
     // version/VERSION = "OLD" -> version/VERSION = "NEW" (JS/TS)
-    new RegExp(`(version\\s*[=:]\\s*["'])${escaped}(["'])`, "i"),
+    new RegExp(`(version\\s*[=:]\\s*["'])${escaped}(["'])`, "gi"),
     // vOLD | -> vNEW | (markdown table)
-    new RegExp(`(v)${escaped}(\\s*\\|)`),
+    new RegExp(`(v)${escaped}(\\s*\\|)`, "g"),
     // version: OLD -> version: NEW
-    new RegExp(`(version[:\\s]+)${escaped}`, "i"),
+    new RegExp(`(version[:\\s]+)${escaped}`, "gi"),
     // Generic: just replace the version string
     new RegExp(escaped, "g"),
   ];
@@ -85,14 +89,20 @@ export function computeVersionReplacement(
 ): string | null {
   const fullPath = join(root, filePath);
   try {
-    const content = readFileSync(fullPath, "utf-8");
+    let content = readFileSync(fullPath, "utf-8");
+    let changed = false;
 
+    // All patterns are applied, not just the first one that matches: they
+    // cover different notations of the same version inside one file.
     for (const pattern of versionPatterns(oldVersion)) {
-      const newContent = content.replace(pattern, versionReplacer(newVersion));
-      if (newContent !== content) return newContent;
+      const next = content.replace(pattern, versionReplacer(newVersion));
+      if (next !== content) {
+        content = next;
+        changed = true;
+      }
     }
 
-    return null;
+    return changed ? content : null;
   } catch {
     return null;
   }
@@ -124,50 +134,6 @@ export function replaceVersionInFile(
   }
 }
 
-function addChangelogEntry(
-  root: string,
-  version: string,
-  changelogFile: string
-): boolean {
-  const fullPath = join(root, changelogFile);
-  try {
-    const content = readFileSync(fullPath, "utf-8");
-    const date = new Date().toISOString().split("T")[0];
-
-    // Find the first ## heading (version entry level) and insert before it.
-    // This preserves the # Title heading (e.g. "# Changelog") at the top.
-    const h2Match = content.match(/^##\s/m);
-    if (h2Match && h2Match.index !== undefined) {
-      const entry = `## [${version}] - ${date}\n\n- \n\n`;
-      const newContent =
-        content.slice(0, h2Match.index) +
-        entry +
-        content.slice(h2Match.index);
-      writeFileSync(fullPath, newContent, "utf-8");
-      return true;
-    }
-
-    // No ## heading found -- insert after the first # heading (title)
-    const h1Match = content.match(/^#\s.*\n/m);
-    if (h1Match && h1Match.index !== undefined) {
-      const insertAfter = h1Match.index + h1Match[0].length;
-      const entry = `## [${version}] - ${date}\n\n- \n\n`;
-      const newContent =
-        content.slice(0, insertAfter) +
-        entry +
-        content.slice(insertAfter);
-      writeFileSync(fullPath, newContent, "utf-8");
-      return true;
-    }
-
-    // No heading at all -- prepend
-    const entry = `## [${version}] - ${date}\n\n- \n\n`;
-    writeFileSync(fullPath, entry + content, "utf-8");
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 // -- Main bump function ------------------------------------------------------
 
