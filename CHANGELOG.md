@@ -3,6 +3,44 @@
 All notable changes to anti-hallucination-guard are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+
+- scripts/check.sh: the gate. One registry of checks with stages
+  (all | ci | push | commit), scope filtering (module vs consumer project), an
+  explicit dependency per check, and a summary. A check that cannot run because
+  a tool is missing is reported as SKIP, never as PASS; --strict turns a skip
+  into a failure.
+- scripts/doctor.sh: reports context, tool versions, installed hooks and config
+  files, so a missing dependency is visible before any check is attempted.
+- ahg.sh: `check`, `doctor` and `test` commands.
+- scripts/tests/check-gate.sh: self-tests for the gate -- a missing tool must
+  not look like a pass, --strict must turn it into a failure, a failing check
+  must propagate, and an unknown check or stage name must be a usage error
+  rather than a silent pass.
+
+- docs/SESSION-LOG.md: a tracked record of what each session did, what is
+  still open and why. worklog.md is gitignored, so the record an agent leaves
+  behind used to disappear with the working copy.
+
+### Fixed
+
+- discover-versions.ts: the exclusion that kept a CHANGELOG from being read
+  as a version file now covers any historical record (session log, release
+  notes). Such a file records past releases, so requiring it to carry the
+  current version would make it lie. Two tests pin it.
+
+### Changed
+
+- CI: validate.yml is now a single job that prints `ahg doctor` and runs
+  `ahg check --stage=ci --strict`. It previously kept its own three-job list of
+  the same checks, which is exactly how the lists drifted apart.
+- pre-push (AHG module repo): runs `check.sh --stage=push` instead of its own
+  hand-written sequence of validate.sh plus two test suites.
+- setup.sh deploys check.sh and doctor.sh to consumer projects; their
+  module-only checks skip themselves there.
+
 ## [2.5.1] - 2026-10-13
 
 ### Fixed

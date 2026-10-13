@@ -51,6 +51,37 @@ describe("CHANGELOG is not a version file", () => {
   });
 });
 
+describe("a session log is not a version file", () => {
+  test("a past release it records is not treated as current", () => {
+    // Both forms that bit in practice: "v2.5.0" in a heading (what
+    // auto-config\'s v([\d.]+) pattern picks up) and "version: 9.9.9" quoted
+    // in prose (what discover-versions\' own pattern list picks up).
+    const dir = pool.make({
+      "package.json": '{\n  "name": "fixture",\n  "version": "2.5.1"\n}\n',
+      "docs/SESSION-LOG.md":
+        "# Session log\n\n## 2026-10-13 -- v2.5.0 audit\n\n" +
+        '- the callback saw "version: 9.9.9" and rewrote it\n',
+    });
+
+    const found = discoverVersions(dir).files.map((f) => f.file);
+
+    expect(found).not.toContain("docs/SESSION-LOG.md");
+    expect(found).toContain("package.json");
+  });
+
+  test("bump does not rewrite what a session log recorded", () => {
+    const dir = pool.make({
+      "package.json": PKG,
+      "docs/SESSION-LOG.md":
+        "# Session log\n\n## 2026-10-13 -- v2.5.0 audit\n",
+    });
+
+    bumpVersion(dir, "3.0.0");
+
+    expect(read(dir, "docs/SESSION-LOG.md")).toContain("v2.5.0 audit");
+  });
+});
+
 describe("gitignored files are not version files", () => {
   test("runtime state with its own version field is skipped", () => {
     const dir = pool.make({

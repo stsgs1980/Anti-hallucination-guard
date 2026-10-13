@@ -64,45 +64,28 @@ fi
 if [ -n "$AHG_MODULE_DIR" ] && [ "$AHG_MODULE_DIR" = "$GIT_ROOT" ]; then
     # ----------------------------------------------------------
     # Context: We ARE the AHG module repo (standalone development)
-    # Action: Run purity check (validate.sh)
+    # Action: Run the gate. The list of checks lives in check.sh,
+    #         not here, so the hook and CI cannot drift apart.
     # ----------------------------------------------------------
-    VALIDATE="$AHG_MODULE_DIR/scripts/validate.sh"
-    if [ -f "$VALIDATE" ]; then
-        if ! bash "$VALIDATE"; then
+    CHECK="$AHG_MODULE_DIR/scripts/check.sh"
+    if [ -f "$CHECK" ]; then
+        echo "pre-push: Running the gate (stage=push)..."
+        if ! bash "$CHECK" --stage=push; then
             echo ""
-            echo "pre-push: PUSH BLOCKED. Repository contains foreign files."
-            echo ""
-            exit 1
-        fi
-    fi
-
-    # Regression tests. CI only runs on push to main and on PRs to main, so
-    # without this a broken branch is discovered at PR time, not before.
-    # Both suites build their fixtures under /tmp and never touch this repo.
-    REGRESSION="$AHG_MODULE_DIR/scripts/tests/regression.sh"
-    if [ -f "$REGRESSION" ]; then
-        echo "pre-push: Running shell regression tests..."
-        if ! bash "$REGRESSION"; then
-            echo ""
-            echo "pre-push: PUSH BLOCKED. Shell regression tests failed."
+            echo "pre-push: PUSH BLOCKED. Gate failed."
             echo ""
             exit 1
         fi
-    fi
-
-    VD_TESTS="$AHG_MODULE_DIR/tools/verify-docs/tests"
-    if [ -d "$VD_TESTS" ]; then
-        if command -v bun &>/dev/null; then
-            echo "pre-push: Running verify-docs engine tests..."
-            if ! (cd "$AHG_MODULE_DIR" && bun test tools/verify-docs/tests/); then
+    else
+        # Module checked out before check.sh existed: purity only.
+        VALIDATE="$AHG_MODULE_DIR/scripts/validate.sh"
+        if [ -f "$VALIDATE" ]; then
+            if ! bash "$VALIDATE"; then
                 echo ""
-                echo "pre-push: PUSH BLOCKED. verify-docs tests failed."
+                echo "pre-push: PUSH BLOCKED. Repository contains foreign files."
                 echo ""
                 exit 1
             fi
-        else
-            # Say so out loud: a skipped suite is not a passed suite.
-            echo "pre-push: WARN bun not found -- verify-docs tests NOT run"
         fi
     fi
 

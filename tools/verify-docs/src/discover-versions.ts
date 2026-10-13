@@ -23,6 +23,12 @@ interface VersionPattern {
   description: string;
 }
 
+// Files that record history rather than declare the current version.
+// Matched as substrings of the lowercased relative path.
+const HISTORICAL_RECORDS = [
+  "changelog", "session-log", "session_log", "release-notes", "release_notes",
+];
+
 const PATTERNS: Record<string, VersionPattern[]> = {
   ".json": [
     { pattern: /"version"\s*:\s*"([\d.]+)"/, description: '"version": "X.Y.Z"' },
@@ -137,13 +143,16 @@ function extractVersion(
     // Only scan first 100 lines (version is usually near the top)
     const lines = content.split("\n").slice(0, 100);
 
-    // A CHANGELOG is a historical record: every version it mentions belongs
-    // to a past release, so none of them is the current version. Skipping
-    // individual lines is not enough -- prose such as "bumped 9.9.9 to 2.0.0"
-    // or "version v2.1 -> v2.5" matches the same patterns a real version field
-    // does, which produced phantom mismatches. Exclude the whole file.
-    if (filePath.toLowerCase().includes("changelog")) {
-      return { version: null, pattern: "changelog -- historical versions only" };
+    // A historical record: every version it mentions belongs to a past
+    // release, so none of them is the current version. Skipping individual
+    // lines is not enough -- prose such as "bumped 9.9.9 to 2.0.0" or
+    // "version v2.1 -> v2.5" matches the same patterns a real version field
+    // does, which produced phantom mismatches. Exclude the whole file. A
+    // session log is the same thing: it exists to record past releases, so
+    // requiring it to carry the current version would make it lie.
+    const lowerPath = filePath.toLowerCase();
+    if (HISTORICAL_RECORDS.some((marker) => lowerPath.includes(marker))) {
+      return { version: null, pattern: "historical record -- past releases only" };
     }
 
     for (const p of patterns) {

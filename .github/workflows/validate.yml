@@ -7,61 +7,19 @@ on:
     branches: [main]
 
 jobs:
-  validate:
-    name: Module purity + fingerprints + verify-docs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run validate.sh
-        run: bash scripts/validate.sh
-
-      - name: Run branch-protect self-test
-        run: bash scripts/branch-protect.sh --test
-
-      - name: Check shell scripts for syntax errors
-        run: |
-          find . -name '*.sh' -not -path './.git/*' | while read -r f; do
-            bash -n "$f" || { echo "SYNTAX ERROR: $f"; exit 1; }
-          done
-          echo "All .sh files pass syntax check"
-
-  tests:
-    name: Regression tests
+  check:
+    name: Gate (all checks)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: oven-sh/setup-bun@v2
 
-      # Engine regressions: version bump, CLI exit codes, version sync,
-      # feature status, version discovery. Fixtures live in temp dirs.
-      - name: verify-docs engine tests
-        run: bun test tools/verify-docs/tests/
+      - name: Report environment
+        run: bash scripts/doctor.sh
 
-      # Shell regressions: a severity=block co-change violation must be
-      # rejected by the real pre-commit hook, and audit.sh must report
-      # repeated commit messages. Builds its own repos under /tmp.
-      - name: Shell regression tests
-        run: bash scripts/tests/regression.sh
-
-  verify-docs:
-    name: verify-docs self-test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: oven-sh/setup-bun@v2
-
-      # The committed verify-docs.json is the configuration this repository
-      # actually ships. Checking a generated stand-in instead would leave the
-      # real one unverified.
-      - name: Run verify-docs with the committed config
-        run: bun run tools/verify-docs/src/cli.ts --ci
-
-      # Consumer projects without a config get the auto-discover path, so it
-      # has to pass on this repository too.
-      - name: Run verify-docs auto-discover (no config)
-        run: |
-          rm -f verify-docs.json
-          bun run tools/verify-docs/src/cli.ts --ci
+      # The list of checks lives in scripts/check.sh, not here. --strict makes
+      # a check that could not run (missing tool) fail the build instead of
+      # being quietly skipped.
+      - name: Run the gate
+        run: bash scripts/ahg.sh check --stage=ci --strict
