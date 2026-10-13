@@ -52,6 +52,10 @@ export interface VersionTarget {
   file: string;
   /** Regex with a capturing group for the version string (e.g. "version:\\s*([\\d.]+)") */
   pattern: string;
+  /** If true, a missing file or a pattern that does not match is reported as
+   *  "skip" instead of counting as an error. Default: false -- a target you
+   *  listed explicitly is expected to exist. */
+  optional?: boolean;
 }
 
 /** Version sync: one source of truth, many targets must match */
@@ -87,10 +91,15 @@ export interface FeatureStatusConfig {
   /** Files that, if they ALL exist, prove the feature is implemented.
    *  At least one file must be specified. */
   implementationFiles: string[];
-  /** Optional: patterns in documentation that indicate a feature IS implemented.
+  /** Optional: patterns in the DOCUMENTATION that indicate a feature IS implemented.
    *  If ANY of these appear in docFile near a context match, the feature is
-   *  considered "claimed as working". Examples: ["implemented", "working", "done"] */
+   *  considered "claimed as working". Examples: ["is working", "is complete"]
+   *  Note: bare words like "implemented" also match inside "not implemented". */
   implementedPatterns?: string[];
+  /** Optional: patterns that mark an IMPLEMENTATION FILE as a stub.
+   *  Defaults to stubPatterns. A file whose content still matches these
+   *  patterns does not count as evidence that the feature works. */
+  codeStubPatterns?: string[];
 }
 
 // ============================================================================

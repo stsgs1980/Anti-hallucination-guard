@@ -1,0 +1,84 @@
+// ============================================================================
+// bump.test.ts -- regression tests for version bumping
+//
+// Regression: the replace callback in bump.ts treated every callback argument
+// as a capture group. For patterns with a single capture group (or none) the
+// trailing arguments are the match offset and the whole source string, so the
+// offset was appended to the new version:
+//   "version: 9.9.9"  --bump=2.0.0-->  "version: 2.0.06"
+// ============================================================================
+
+import { describe, test, expect, afterEach } from "bun:test";
+import { bumpVersion, replaceVersionInFile } from "../src/bump.js";
+import { FixturePool, read } from "./_helpers.js";
+
+const pool = new FixturePool();
+afterEach(() => pool.drain());
+
+describe("bump: markdown 'version: X.Y.Z'", () => {
+  test("does not append the match offset to the new version", () => {
+    const dir = pool.make({
+      "package.json": '{\n  "name": "fixture",\n  "version": "9.9.9"\n}\n',
+      "README.md": "# App\n\nversion: 9.9.9\n",
+    });
+
+    const result = bumpVersion(dir, "2.0.0");
+
+    expect(read(dir, "README.md")).toBe("# App\n\nversion: 2.0.0\n");
+    expect(read(dir, "package.json")).toContain('"version": "2.0.0"');
+    expect(result.failed).toEqual([]);
+  });
+});
+
+describe("bump: bare version occurrence (generic fallback pattern)", () => {
+  test("replaces only the version string", () => {
+    const dir = pool.make({ "bare.txt": "release 1.0.0 is live\n" });
+
+    const ok = replaceVersionInFile("bare.txt", dir, "1.0.0", "2.0.0");
+
+    expect(ok).toBe(true);
+    expect(read(dir, "bare.txt")).toBe("release 2.0.0 is live\n");
+  });
+});
+
+describe("bump: markdown table row", () => {
+  test("keeps the surrounding table syntax", () => {
+    const dir = pool.make({ "README.md": "# App\n\n| v9.9.9 | current |\n" });
+
+    const ok = replaceVersionInFile("README.md", dir, "9.9.9", "2.0.0");
+
+    expect(ok).toBe(true);
+    expect(read(dir, "README.md")).toBe("# App\n\n| v2.0.0 | current |\n");
+  });
+});
+
+describe("bump: JSON manifest", () => {
+  test("keeps the quotes around the version", () => {
+    const dir = pool.make({
+      "package.json": '{\n  "name": "fixture",\n  "version": "9.9.9"\n}\n',
+    });
+
+    const ok = replaceVersionInFile("package.json", dir, "9.9.9", "2.0.0");
+
+    expect(ok).toBe(true);
+    expect(read(dir, "package.json")).toBe(
+      '{\n  "name": "fixture",\n  "version": "2.0.0"\n}\n'
+    );
+  });
+});
+
+describe("bump: dry run", () => {
+  test("writes nothing", () => {
+    const dir = pool.make({
+      "package.json": '{\n  "name": "fixture",\n  "version": "9.9.9"\n}\n',
+      "README.md": "# App\n\nversion: 9.9.9\n",
+    });
+
+    const result = bumpVersion(dir, "2.0.0", { dryRun: true });
+
+    expect(result.dryRun).toBe(true);
+    expect(result.updated).toBe(2);
+    expect(read(dir, "README.md")).toBe("# App\n\nversion: 9.9.9\n");
+    expect(read(dir, "package.json")).toContain('"version": "9.9.9"');
+  });
+});

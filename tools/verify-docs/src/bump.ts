@@ -1,9 +1,14 @@
 // ============================================================================
-// bump.ts -- Atomic version bump across all discovered files
+// bump.ts -- Version bump across all discovered files
 //
 // Uses discover-versions to find all files containing version numbers,
-// then updates them all atomically to the specified version.
+// then updates them all to the specified version.
 // Optionally adds a CHANGELOG entry if a CHANGELOG file exists.
+//
+// NOT atomic across files: a filesystem cannot roll back several writes.
+// What this module does guarantee is ordering -- every replacement is
+// computed first, and only after all of them succeed are any files written.
+// A write that fails halfway is reported in BumpResult.failed, never hidden.
 // ============================================================================
 
 import { readFileSync, writeFileSync, existsSync } from "fs";
@@ -28,47 +33,92 @@ export interface BumpResult {
 
 // -- Helpers -----------------------------------------------------------------
 
-function replaceVersionInFile(
+/** Version patterns tried in priority order, most specific first. */
+function versionPatterns(oldVersion: string): RegExp[] {
+  const escaped = oldVersion.replace(/\./g, "\\.");
+
+  return [
+    // "version": "OLD" -> "version": "NEW" (JSON)
+    new RegExp(`("version"\\s*:\\s*")${escaped}(")`),
+    // version/VERSION = "OLD" -> version/VERSION = "NEW" (JS/TS)
+    new RegExp(`(version\\s*[=:]\\s*["'])${escaped}(["'])`, "i"),
+    // vOLD | -> vNEW | (markdown table)
+    new RegExp(`(v)${escaped}(\\s*\\|)`),
+    // version: OLD -> version: NEW
+    new RegExp(`(version[:\\s]+)${escaped}`, "i"),
+    // Generic: just replace the version string
+    new RegExp(escaped, "g"),
+  ];
+}
+
+/**
+ * Build a String.replace() callback that swaps the old version for the new one.
+ *
+ * A replace callback is invoked as (match, ...captures, offset, string):
+ * the LAST two arguments are the match offset and the whole source string,
+ * never capture groups. Treating them as captures is what appended the match
+ * offset to the new version -- "version: 9.9.9" bumped to 2.0.0 became
+ * "version: 2.0.06" (offset 6), and the group-less generic pattern pasted the
+ * entire file content back into itself.
+ */
+function versionReplacer(newVersion: string) {
+  return (...cbArgs: unknown[]): string => {
+    const captures = cbArgs
+      .slice(1, cbArgs.length - 2)
+      .map((c) => (typeof c === "string" ? c : ""));
+
+    if (captures.length === 0) return newVersion;
+    return captures[0] + newVersion + captures.slice(1).join("");
+  };
+}
+
+/**
+ * Compute the new content of a file with the version replaced.
+ * Returns null when the old version cannot be found or the file is unreadable.
+ * Does not touch the filesystem beyond reading.
+ */
+export function computeVersionReplacement(
+  filePath: string,
+  root: string,
+  oldVersion: string,
+  newVersion: string
+): string | null {
+  const fullPath = join(root, filePath);
+  try {
+    const content = readFileSync(fullPath, "utf-8");
+
+    for (const pattern of versionPatterns(oldVersion)) {
+      const newContent = content.replace(pattern, versionReplacer(newVersion));
+      if (newContent !== content) return newContent;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Replace the version inside one file and write the result.
+ * Returns true when the file was rewritten.
+ */
+export function replaceVersionInFile(
   filePath: string,
   root: string,
   oldVersion: string,
   newVersion: string
 ): boolean {
-  const fullPath = join(root, filePath);
+  const newContent = computeVersionReplacement(
+    filePath,
+    root,
+    oldVersion,
+    newVersion
+  );
+  if (newContent === null) return false;
+
   try {
-    let content = readFileSync(fullPath, "utf-8");
-    const escaped = oldVersion.replace(/\./g, "\\.");
-
-    // Try common patterns and replace
-    const patterns = [
-      // "version": "OLD" -> "version": "NEW" (JSON)
-      new RegExp(`("version"\\s*:\\s*")${escaped}(")`),
-      // version/VERSION = "OLD" -> version/VERSION = "NEW" (JS/TS)
-      new RegExp(`(version\\s*[=:]\\s*["'])${escaped}(["'])`, "i"),
-      // vOLD | -> vNEW | (markdown table)
-      new RegExp(`(v)${escaped}(\\s*\\|)`),
-      // version: OLD -> version: NEW
-      new RegExp(`(version[:\\s]+)${escaped}`, "i"),
-      // Generic: just replace the version string
-      new RegExp(escaped, "g"),
-    ];
-
-    for (const pattern of patterns) {
-      const newContent = content.replace(pattern, (match, ...args) => {
-        // If there are capture groups, reconstruct with new version
-        if (args.length >= 2) {
-          return args[0] + newVersion + args[1];
-        }
-        return newVersion;
-      });
-
-      if (newContent !== content) {
-        writeFileSync(fullPath, newContent, "utf-8");
-        return true;
-      }
-    }
-
-    return false;
+    writeFileSync(join(root, filePath), newContent, "utf-8");
+    return true;
   } catch {
     return false;
   }
@@ -132,6 +182,11 @@ export function bumpVersion(
   const updatedFiles: string[] = [];
   const failedFiles: string[] = [];
 
+  // -- Phase 1: compute every replacement before writing anything -----------
+  // If a version cannot be located in a discovered file, it is reported as a
+  // failure instead of being silently skipped.
+  const planned: { file: string; content: string }[] = [];
+
   for (const dv of versionInfo.files) {
     if (dv.version === null) continue;
     if (dv.version === newVersion) {
@@ -139,16 +194,31 @@ export function bumpVersion(
       continue;
     }
 
-    if (dryRun) {
-      updatedFiles.push(dv.file);
-      continue;
-    }
-
-    const success = replaceVersionInFile(dv.file, root, dv.version, newVersion);
-    if (success) {
-      updatedFiles.push(dv.file);
-    } else {
+    const content = computeVersionReplacement(
+      dv.file,
+      root,
+      dv.version,
+      newVersion
+    );
+    if (content === null) {
       failedFiles.push(dv.file);
+    } else {
+      planned.push({ file: dv.file, content });
+    }
+  }
+
+  // -- Phase 2: write -------------------------------------------------------
+  // Dry run stops here: nothing has been written during phase 1.
+  if (dryRun) {
+    for (const p of planned) updatedFiles.push(p.file);
+  } else {
+    for (const p of planned) {
+      try {
+        writeFileSync(join(root, p.file), p.content, "utf-8");
+        updatedFiles.push(p.file);
+      } catch {
+        failedFiles.push(p.file);
+      }
     }
   }
 

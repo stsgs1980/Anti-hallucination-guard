@@ -48,6 +48,8 @@
 # scripts directory
 !scripts/
 !scripts/*
+!scripts/tests/
+!scripts/tests/**
 
 # skills directory (only our own)
 !skills/
