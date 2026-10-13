@@ -138,6 +138,7 @@ ALLOWED=(
     "tools/verify-docs/tests/cli-exit-code.test.ts"
     "tools/verify-docs/tests/version-sync.test.ts"
     "tools/verify-docs/tests/feature-status.test.ts"
+    "tools/verify-docs/tests/discover-versions.test.ts"
     "tools/verify-docs/templates/"
     "tools/verify-docs/templates/pre-push"
     "tools/verify-docs/templates/verify.yml"

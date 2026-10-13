@@ -490,6 +490,21 @@ commit, a mismatch must produce a non-zero exit code, a version bump must not
 corrupt the surrounding text, a missing version target must count as an error,
 and a TODO-only implementation file must not read as "implemented".
 
+### In CI
+
+`.github/workflows/validate.yml` runs three jobs on every push and pull request
+to `main`:
+
+| Job | What it runs |
+|-----|--------------|
+| `validate` | module purity, branch-protect self-test, shell syntax |
+| `tests` | `bun test tools/verify-docs/tests/`, `scripts/tests/regression.sh` |
+| `verify-docs` | the committed `verify-docs.json`, then auto-discover with the config removed |
+
+The `verify-docs` job used to overwrite the committed config with a generated
+two-check stand-in, which left the configuration this repository actually ships
+unverified.
+
 ## Usage
 
 ### At the start of each session
@@ -636,6 +651,7 @@ anti-hallucination-guard/
         cli-exit-code.test.ts       -- CLI exit code regressions
         version-sync.test.ts        -- section 3 regressions
         feature-status.test.ts      -- section 4 regressions
+        discover-versions.test.ts   -- version discovery regressions
         _helpers.ts                 -- shared fixture helpers
       package.json
   skills/

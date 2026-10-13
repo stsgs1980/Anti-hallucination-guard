@@ -26,6 +26,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
   updated, so a README could keep the old version in its badge while the table
   row was bumped -- and the command still reported success. Every notation is
   applied globally now.
+- verify-docs discover-versions.ts: a CHANGELOG was treated as a file holding
+  the project version. Every version in a changelog belongs to a past release,
+  and prose such as "version v2.1 -> v2.5" matches the same patterns as a real
+  version field, so verification reported phantom mismatches and `ahg bump`
+  rewrote historical entries. Changelogs are excluded from version discovery.
 - verify-docs verify-section3.ts: a version target listed in the config but
   missing from disk was reported as "skip" and did not count as an error. It is
   an error now; set "optional": true to keep the old behaviour.
@@ -50,6 +55,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- CI: validate.yml gained a `tests` job running `bun test
+  tools/verify-docs/tests/` and `scripts/tests/regression.sh`. Without it the
+  regression suites ran only on a developer machine, so a later commit could
+  break them unnoticed.
+- CI: the verify-docs job no longer replaces the committed verify-docs.json
+  with a generated two-check stand-in. It verifies the shipped config, then
+  the auto-discover path with the config removed.
 - verify-docs: CHANGELOG entry creation moved from bump.ts into
   bump-changelog.ts, so bump.ts stays inside the Rule 12 line limit.
 - README.md and AGENT_RULES.md: dropped the "atomic" wording for `ahg bump`.

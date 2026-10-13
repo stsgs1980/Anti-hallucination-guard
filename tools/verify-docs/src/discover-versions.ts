@@ -129,16 +129,17 @@ function extractVersion(
     // Only scan first 100 lines (version is usually near the top)
     const lines = content.split("\n").slice(0, 100);
 
-    // For CHANGELOG files, skip lines that mention version only as part of
-    // a change description (e.g. "version 2.0.0 -> 2.5.0") or as a section
-    // header (e.g. "## [2.0.0]"). These are historical records, not the
-    // current version of the project.
-    const isChangelog = filePath.toLowerCase().includes("changelog");
+    // A CHANGELOG is a historical record: every version it mentions belongs
+    // to a past release, so none of them is the current version. Skipping
+    // individual lines is not enough -- prose such as "bumped 9.9.9 to 2.0.0"
+    // or "version v2.1 -> v2.5" matches the same patterns a real version field
+    // does, which produced phantom mismatches. Exclude the whole file.
+    if (filePath.toLowerCase().includes("changelog")) {
+      return { version: null, pattern: "changelog -- historical versions only" };
+    }
 
     for (const p of patterns) {
       for (const line of lines) {
-        // Skip CHANGELOG section headers (## [X.Y.Z])
-        if (isChangelog && /^##\s*\[/.test(line)) continue;
         // Skip lines describing version transitions (X.Y.Z -> Z.W.Q)
         if (/\d+\.\d+\.\d+\s*->/.test(line)) continue;
 
