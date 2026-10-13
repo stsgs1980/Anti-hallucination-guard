@@ -103,6 +103,7 @@ ALLOWED=(
     "scripts/co-change-check.sh"
     "scripts/setup-branch-protection.sh"
     "scripts/tests/"
+    "docs/"
     "scripts/check.sh"
     "scripts/doctor.sh"
     "scripts/tests/regression.sh"

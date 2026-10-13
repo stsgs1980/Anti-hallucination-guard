@@ -26,6 +26,11 @@
 !setup/**
 !update.sh
 
+# Tracked session log. worklog.md (below) stays ignored: it is the
+# hook's freshness scratchpad, this file is the durable record.
+!docs/
+!docs/**
+
 # Co-change dependency graph
 !.ahg-cochange.json
 

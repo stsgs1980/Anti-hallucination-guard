@@ -20,6 +20,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
   must propagate, and an unknown check or stage name must be a usage error
   rather than a silent pass.
 
+- docs/SESSION-LOG.md: a tracked record of what each session did, what is
+  still open and why. worklog.md is gitignored, so the record an agent leaves
+  behind used to disappear with the working copy.
+
+### Fixed
+
+- discover-versions.ts: the exclusion that kept a CHANGELOG from being read
+  as a version file now covers any historical record (session log, release
+  notes). Such a file records past releases, so requiring it to carry the
+  current version would make it lie. Two tests pin it.
+
 ### Changed
 
 - CI: validate.yml is now a single job that prints `ahg doctor` and runs

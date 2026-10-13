@@ -619,6 +619,8 @@ anti-hallucination-guard/
     08-integrate-cascade-guard.sh  -- cascade-state.json freshness
     09-git-staging.sh              -- git add installed files
   CHANGELOG.md                       -- version history (Keep a Changelog format)
+  docs/
+    SESSION-LOG.md                  -- tracked record of what each session did
   registry.json                      -- ID registry for all addressable entities
   AGENT_RULES.md                    -- agent rules template (17 rules, with ID comments)
   .ahgrc                            -- JSON config for line-check settings
