@@ -213,12 +213,12 @@ Violations are BLOCKED automatically -- the commit will not succeed.
 <!-- ID: RULE-013 | ver:1.1 | Level: C | Related: TOOL-BUMP -->
 ## Rule 13 [C]: Use ahg bump for version updates
 
-When changing the project version, use the atomic bump command:
+When changing the project version, use the bump command:
   bash scripts/ahg.sh bump X.Y.Z
 
 This command:
 - Auto-discovers ALL files containing version numbers
-- Updates them atomically (no file forgotten)
+- Updates them in one pass (no file forgotten)
 - Adds CHANGELOG entry if CHANGELOG exists
 - Supports --dry-run for preview
 
@@ -396,4 +396,4 @@ Stage Summary:
 
 ---
 
-v2.5.0 | 2026-06-14 | anti-hallucination-guard
+v2.5.1 | 2026-10-13 | anti-hallucination-guard

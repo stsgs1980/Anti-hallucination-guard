@@ -10,7 +10,11 @@ PROJECT_ROOT="$(git -C "$MODULE_ROOT" rev-parse --show-toplevel 2>/dev/null || e
 WORKLOG="$PROJECT_ROOT/worklog.md"
 REPORT="$PROJECT_ROOT/download/audit-report.txt"
 SCORE=0
-MAX_SCORE=100
+# Sum of every weight below: 20 + 15 + 15 + 15 + 15 + 10 = 90.
+# A maximum that cannot be reached makes every result read as a shortfall.
+MAX_SCORE=90
+# Only the recent part of the history describes the session being audited.
+COMMIT_WINDOW="${AUDIT_COMMIT_WINDOW:-50}"
 
 mkdir -p "$(dirname "$REPORT")"
 
@@ -33,9 +37,9 @@ else
     echo "[-] worklog.md: NOT FOUND -- agent did not maintain documentation" >> "$REPORT"
 fi
 
-# 2. Commit count
-COMMITS=$(git -C "$PROJECT_ROOT" rev-list --count HEAD 2>/dev/null || echo 0)
-echo "[+] Commits: $COMMITS" >> "$REPORT"
+# 2. Commit count (bounded window, not the whole history of the project)
+COMMITS=$(git -C "$PROJECT_ROOT" rev-list --count -n "$COMMIT_WINDOW" HEAD 2>/dev/null || echo 0)
+echo "[+] Commits in last $COMMIT_WINDOW: $COMMITS" >> "$REPORT"
 if [ "$COMMITS" -gt 3 ]; then
     SCORE=$((SCORE + 15))
 fi
@@ -49,12 +53,14 @@ if [ -n "$CHANGED" ]; then
 fi
 
 # 4. Duplicate commit messages (sign of loops)
-DUPS=$(git -C "$PROJECT_ROOT" log --oneline | sort | uniq -d | head -5)
+# `--oneline` prefixes each line with the commit hash, so no two lines are ever
+# equal and `uniq -d` could never report anything. Compare subjects only.
+DUPS=$(git -C "$PROJECT_ROOT" log --pretty=%s -n "$COMMIT_WINDOW" 2>/dev/null | sort | uniq -d | head -5)
 if [ -n "$DUPS" ]; then
-    echo "[!] Duplicate commits (possible loop):" >> "$REPORT"
+    echo "[!] Repeated commit messages (possible loop):" >> "$REPORT"
     echo "$DUPS" >> "$REPORT"
 else
-    echo "[+] No loops detected" >> "$REPORT"
+    echo "[+] No repeated commit messages in window" >> "$REPORT"
     SCORE=$((SCORE + 15))
 fi
 
@@ -88,12 +94,16 @@ fi
 echo "" >> "$REPORT"
 echo "==============================" >> "$REPORT"
 echo "SCORE: ${SCORE}/${MAX_SCORE}" >> "$REPORT"
+echo "" >> "$REPORT"
+echo "This score measures process signals only: worklog present, recent and" >> "$REPORT"
+echo "structured, commits made, no repeated commit messages. It is not evidence" >> "$REPORT"
+echo "that the work is correct, and a low score is not evidence of dishonesty." >> "$REPORT"
 if [ "$SCORE" -ge 70 ]; then
-    echo "VERDICT: Acceptable" >> "$REPORT"
+    echo "VERDICT: Process signals present" >> "$REPORT"
 elif [ "$SCORE" -ge 40 ]; then
-    echo "VERDICT: Needs improvement" >> "$REPORT"
+    echo "VERDICT: Process signals incomplete" >> "$REPORT"
 else
-    echo "VERDICT: Agent was faking activity" >> "$REPORT"
+    echo "VERDICT: Process signals missing -- nothing verifiable was documented" >> "$REPORT"
 fi
 
 cat "$REPORT"

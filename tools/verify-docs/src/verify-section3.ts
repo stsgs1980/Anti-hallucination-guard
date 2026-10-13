@@ -67,32 +67,44 @@ export function verifySection3(
   for (const target of versionSync.targets) {
     const targetPath = join(root, target.file);
 
+    // A target listed in the config is expected to exist and to carry the
+    // version. Reporting it as "skip" let a deleted or renamed version file
+    // pass verification silently; only "optional": true means skip.
     if (!existsSync(targetPath)) {
       results.push({
-        status: "skip",
+        status: target.optional ? "skip" : "ERR",
         name: target.file,
-        detail: "file not found"
+        detail: target.optional
+          ? "file not found (optional target)"
+          : "file not found -- listed as a version target but missing"
       });
+      if (!target.optional) errors++;
       continue;
     }
 
     const targetContent = safeRead(targetPath);
     if (!targetContent) {
       results.push({
-        status: "skip",
+        status: target.optional ? "skip" : "ERR",
         name: target.file,
-        detail: "cannot read file"
+        detail: target.optional
+          ? "cannot read file (optional target)"
+          : "cannot read file"
       });
+      if (!target.optional) errors++;
       continue;
     }
 
     const targetMatch = targetContent.match(new RegExp(target.pattern));
     if (!targetMatch || !targetMatch[1]) {
       results.push({
-        status: "skip",
+        status: target.optional ? "skip" : "ERR",
         name: target.file,
-        detail: `pattern not found: ${target.pattern}`
+        detail: target.optional
+          ? `pattern not found (optional target): ${target.pattern}`
+          : `pattern not found, version cannot be confirmed: ${target.pattern}`
       });
+      if (!target.optional) errors++;
       continue;
     }
 

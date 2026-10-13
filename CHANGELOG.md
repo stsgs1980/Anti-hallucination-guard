@@ -3,6 +3,95 @@
 All notable changes to anti-hallucination-guard are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [2.5.1] - 2026-10-13
+
+### Fixed
+
+- co-change-check.sh: a severity "block" violation no longer slips through.
+  `set -e` aborted the script before python's exit status was translated, so the
+  pre-commit hook received code 2 ("unexpected error") and only warned; the
+  commit was created without the required buddy file. Exit codes are now
+  0 = pass, 1 = blocked, 2 = rules not evaluated.
+- co-change-check.sh: a missing python3 no longer reports a silent pass. It is
+  reported as "rules not evaluated" (exit 2); COCHANGE_STRICT=1 turns it into a
+  block.
+- verify-docs cli.ts: auto-discover mode exited 0 after printing
+  "N mismatch(es) found!", so CI and the pre-commit hook saw a pass. It now
+  exits 1, matching the contract documented in --help.
+- verify-docs bump.ts: the replace callback treated the match offset and the
+  whole source string as capture groups, appending the offset to the new version
+  ("version: 9.9.9" bumped to 2.0.0 became "version: 2.0.06") and pasting the
+  file content back into itself for the group-less generic pattern.
+- verify-docs bump.ts: only the first matching notation inside a file was
+  updated, so a README could keep the old version in its badge while the table
+  row was bumped -- and the command still reported success. Every notation is
+  applied globally now.
+- verify-docs discover-versions.ts: a CHANGELOG was treated as a file holding
+  the project version. Every version in a changelog belongs to a past release,
+  and prose such as "version v2.1 -> v2.5" matches the same patterns as a real
+  version field, so verification reported phantom mismatches and `ahg bump`
+  rewrote historical entries. Changelogs are excluded from version discovery.
+- verify-docs bump.ts: re-running a bump for a version already present in the
+  CHANGELOG stacked another empty "## [X.Y.Z]" section on top of the existing
+  one and still reported that the CHANGELOG was updated.
+- verify-docs discover-versions.ts: gitignored files were treated as version
+  files. .branch-protect-state.json carries a schema version of its own, and
+  `ahg bump` was about to overwrite it with the project version.
+- verify-docs discover-versions.ts: tools/verify-docs/ was skipped
+  unconditionally, so inside the AHG module repository itself `ahg bump` never
+  updated tools/verify-docs/package.json -- one of the four declared version
+  targets. A copy installed in a consumer project is still skipped.
+- verify-docs verify-section3.ts: a version target listed in the config but
+  missing from disk was reported as "skip" and did not count as an error. It is
+  an error now; set "optional": true to keep the old behaviour.
+- verify-docs verify-section4.ts: "documented as working" plus an existing
+  implementation file was reported as "Implemented", even when that file held
+  nothing but a TODO stub. Stub markers inside the code are now detected, and a
+  passing result is labelled "presence check only".
+- audit.sh: repeated commit messages could never be detected, because
+  `git log --oneline` prefixes every line with the hash, so `uniq -d` never
+  matched. Subjects are compared now, inside a bounded commit window.
+- audit.sh: MAX_SCORE was 100 while the weights add up to 90, so no session
+  could ever reach the maximum.
+
+### Added
+
+- tools/verify-docs/tests: regression tests (`bun test tests/`) covering the
+  bump, CLI exit code, version sync and feature status defects above.
+- scripts/tests/regression.sh: regression checks for the co-change block path,
+  including the real pre-commit hook, and for the audit report.
+- verify-docs: `versionSync.targets[].optional` flag.
+- verify-docs: `featureStatus[].codeStubPatterns` override.
+
+### Changed
+
+- pre-push (AHG module repo): now runs scripts/tests/regression.sh and
+  `bun test tools/verify-docs/tests/`. CI only triggers on push to main and on
+  PRs to main, so before this a broken branch surfaced at PR time. When bun is
+  absent the engine suite is reported as NOT run rather than skipped silently.
+- CI: validate.yml gained a `tests` job running `bun test
+  tools/verify-docs/tests/` and `scripts/tests/regression.sh`. Without it the
+  regression suites ran only on a developer machine, so a later commit could
+  break them unnoticed.
+- CI: the verify-docs job no longer replaces the committed verify-docs.json
+  with a generated two-check stand-in. It verifies the shipped config, then
+  the auto-discover path with the config removed.
+- verify-docs: CHANGELOG entry creation moved from bump.ts into
+  bump-changelog.ts, so bump.ts stays inside the Rule 12 line limit.
+- README.md and AGENT_RULES.md: dropped the "atomic" wording for `ahg bump`.
+  The bump computes every replacement before writing anything and reports a
+  failed write instead of hiding it, but a filesystem cannot roll back several
+  files.
+- audit.sh: verdicts describe process signals instead of accusing the agent of
+  faking activity, and the report states that the score is not evidence that
+  the work is correct.
+
+### Known limitations
+
+- Version discovery scans only the first 100 lines of a file. AGENT_RULES.md
+  carries its version at line 399, so `ahg bump` does not update that file; the
+  version check does report the mismatch, and the file is updated by hand.
+
 ## [2.5.0] - 2026-06-14
 
 ### Added

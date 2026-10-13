@@ -76,6 +76,36 @@ if [ -n "$AHG_MODULE_DIR" ] && [ "$AHG_MODULE_DIR" = "$GIT_ROOT" ]; then
         fi
     fi
 
+    # Regression tests. CI only runs on push to main and on PRs to main, so
+    # without this a broken branch is discovered at PR time, not before.
+    # Both suites build their fixtures under /tmp and never touch this repo.
+    REGRESSION="$AHG_MODULE_DIR/scripts/tests/regression.sh"
+    if [ -f "$REGRESSION" ]; then
+        echo "pre-push: Running shell regression tests..."
+        if ! bash "$REGRESSION"; then
+            echo ""
+            echo "pre-push: PUSH BLOCKED. Shell regression tests failed."
+            echo ""
+            exit 1
+        fi
+    fi
+
+    VD_TESTS="$AHG_MODULE_DIR/tools/verify-docs/tests"
+    if [ -d "$VD_TESTS" ]; then
+        if command -v bun &>/dev/null; then
+            echo "pre-push: Running verify-docs engine tests..."
+            if ! (cd "$AHG_MODULE_DIR" && bun test tools/verify-docs/tests/); then
+                echo ""
+                echo "pre-push: PUSH BLOCKED. verify-docs tests failed."
+                echo ""
+                exit 1
+            fi
+        else
+            # Say so out loud: a skipped suite is not a passed suite.
+            echo "pre-push: WARN bun not found -- verify-docs tests NOT run"
+        fi
+    fi
+
 elif [ -n "$AHG_MODULE_DIR" ]; then
     # ----------------------------------------------------------
     # Context: AHG is a submodule in a consumer project

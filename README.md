@@ -4,7 +4,7 @@
 # anti-hallucination-guard
 
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version 2.5.0](https://img.shields.io/badge/v2.5.0-2026--06--14-green.svg)]()
+[![Version 2.5.1](https://img.shields.io/badge/v2.5.1-2026--10--13-green.svg)]()
 [![Bash](https://img.shields.io/badge/Shell-Bash-4EAA25.svg?logo=gnu-bash&logoColor=white)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-verify--docs-3178C6.svg?logo=typescript&logoColor=white)]()
 [![Git Hooks](https://img.shields.io/badge/Git-Hooks-FF6600.svg?logo=git&logoColor=white)]()
@@ -12,11 +12,11 @@
 
 Git module for preventing "illusion of activity" by AI agents in Z.ai sandbox environments.
 Includes built-in **verify-docs** -- 5-section automatic documentation consistency checker
-with **auto-discover** (no config required), **atomic version bump**, and **baseline tracking**.
+with **auto-discover** (no config required), **single-command version bump**, and **baseline tracking**.
 
 ## What it does
 
-Physically enforces that the agent:
+Mechanically enforces, within what a git hook can observe, that the agent:
 - Logs every action in worklog
 - Reads files before modifying them
 - Commits per logical block
@@ -30,7 +30,7 @@ Physically enforces that the agent:
 Plus automatic documentation verification (three modes):
 - **DISCOVER**: auto-scan project without config (finds versions, CHANGELOG, coverage gaps)
 - **VERIFY**: cross-check docs against code (5 sections, **auto-discover if no config!**)
-- **GENERATE**: atomic version bump + CHANGELOG entry via `ahg bump`
+- **GENERATE**: version bump + CHANGELOG entry via `ahg bump`
 
 ## Installation
 
@@ -84,7 +84,8 @@ bash anti-hallucination-guard/setup.sh
 | `scripts/check-hooks-snapshot.sh` | Create integrity snapshot of hooks/configs |
 | `scripts/check-hooks-verify.sh` | Verify hooks/configs against snapshot (anti-tampering) |
 | `scripts/line-count-check.sh` | Enforce Rule 12: block commit if file exceeds 250 lines |
-| `scripts/co-change-check.sh` | Enforce Rule 10: warn if buddy files not in same commit |
+| `scripts/co-change-check.sh` | Enforce Rule 10: warn, or block a `severity: "block"` pair, when buddy files miss a commit |
+| `scripts/tests/regression.sh` | Regression tests for the shell scripts (run in a disposable git repo) |
 | `scripts/branch-protect.sh` | Branch protection orchestrator (requires `gh` CLI) |
 | `scripts/branch-protect-lib.sh` | Branch protection config + helpers |
 | `scripts/check-hooks-lib.sh` | Shared functions for hook integrity checks |
@@ -104,7 +105,7 @@ bash scripts/ahg.sh <command> [args]
 |---------|-------------|
 | `verify [--ci]` | Verify docs (auto-discover if no config!) |
 | `discover` | Auto-scan project (no config needed) |
-| `bump <version>` | Update version in all files atomically |
+| `bump <version>` | Update version in all discovered files in one command |
 | `bump <version> --dry-run` | Preview bump without writing |
 | `init` | Generate verify-docs.json from discover |
 | `baseline` | Create .ahg-baseline.json |
@@ -136,16 +137,16 @@ bash scripts/ahg.sh discover
 
 Runs automatically as a fallback in the pre-commit hook when verify-docs.json does not exist.
 
-### GENERATE mode (atomic changes)
+### GENERATE mode (generated changes)
 
-Updates versions and generates configuration atomically:
+Updates versions and generates configuration in one command:
 - `ahg bump X.Y.Z` -- updates version in ALL discovered files at once
 - `ahg init` -- generates verify-docs.json from auto-discover results
 - `ahg baseline` -- creates .ahg-baseline.json for deletion tracking
 
 ```bash
-bash scripts/ahg.sh bump 2.5.0          # update all version files + CHANGELOG
-bash scripts/ahg.sh bump 2.5.0 --dry-run  # preview without writing
+bash scripts/ahg.sh bump 2.5.1          # update all version files + CHANGELOG
+bash scripts/ahg.sh bump 2.5.1 --dry-run  # preview without writing
 bash scripts/ahg.sh init                  # generate verify-docs.json
 bash scripts/ahg.sh baseline              # create file baseline
 ```
@@ -227,7 +228,7 @@ of truth and list targets that must match:
 }
 ```
 
-Or use `ahg bump` to update ALL version files atomically without manual config.
+Or use `ahg bump` to update ALL version files in one command, without manual config.
 
 ### Section 4: Feature Status (Stub Detection)
 
@@ -326,7 +327,7 @@ in the project root. This file records:
 
 ```json
 {
-  "ahgVersion": "2.5.0",
+  "ahgVersion": "2.5.1",
   "previousVersion": "2.0.0",
   "previousCommit": "abc1234",
   "currentCommit": "fd686cb",
@@ -389,7 +390,7 @@ Example task structure in state file:
 | Rule 10 | [C] | **Documentation sync** (no code without docs) |
 | Rule 11 | [C] | **Integrity protection** (no self-sabotage) |
 | Rule 12 | [C] | **Anti-monolith** (no file over 250 lines) |
-| Rule 13 | [C] | **ahg bump** (atomic version updates, no manual edits) |
+| Rule 13 | [C] | **ahg bump** (one-command version updates, no manual edits) |
 | Rule 14 | [C] | **Pre-commit checklist** (mandatory before every commit) |
 | Rule 15 | [W] | **UNICODE_POLICY** (ASCII-only output, no emoji, no Unicode graphics) |
 | Rule 16 | [C] | **AHG submodule is immutable** (no removal, no inlining) |
@@ -427,7 +428,10 @@ Functions must stay under 50 lines. Auto-activation: do not wait to be asked.
 
 When changing the project version, use `bash scripts/ahg.sh bump X.Y.Z` instead
 of manual edits. This command auto-discovers ALL files containing version numbers
-and updates them atomically. Manual updates cause version drift.
+and updates them in one pass. Manual updates cause version drift.
+The bump is not a filesystem transaction: every replacement is computed
+before anything is written, and a write that fails is reported in the
+command output instead of being hidden.
 
 ### Rule 15: UNICODE_POLICY
 
@@ -464,7 +468,42 @@ The pre-commit hook runs in multiple phases:
 | 3 | verify-docs (if verify-docs.json exists) | Yes |
 | 3.5 | auto-discover fallback (full verify engine if no config) | No (warn) |
 | 4 | Anti-monolith (Rule 12: no file over 250 lines) | Yes |
-| 5 | Co-change check (buddy files must change together) | Warn |
+| 5 | Co-change check (buddy files must change together) | Yes for `severity: "block"` pairs, warn otherwise |
+
+Phase 5 exit codes: `0` = pass, `1` = a `severity: "block"` buddy file is missing
+(commit rejected), `2` = the rules could not be evaluated, for example because
+python3 is not installed. Code 2 is non-blocking by default so that a missing
+interpreter cannot make the repository uncommittable; set `COCHANGE_STRICT=1`
+to treat an unevaluated check as a block instead.
+
+## Tests
+
+```
+bash scripts/tests/regression.sh        # shell checks, in a disposable git repo
+cd tools/verify-docs && bun test tests/  # verify-docs engine
+```
+
+Both suites build their fixtures in a temporary directory and delete them
+afterwards; neither one touches the repository it is run from. They cover the
+defects listed in CHANGELOG.md: a `block` co-change violation must reject the
+commit, a mismatch must produce a non-zero exit code, a version bump must not
+corrupt the surrounding text, a missing version target must count as an error,
+and a TODO-only implementation file must not read as "implemented".
+
+### In CI
+
+`.github/workflows/validate.yml` runs three jobs on every push and pull request
+to `main`:
+
+| Job | What it runs |
+|-----|--------------|
+| `validate` | module purity, branch-protect self-test, shell syntax |
+| `tests` | `bun test tools/verify-docs/tests/`, `scripts/tests/regression.sh` |
+| `verify-docs` | the committed `verify-docs.json`, then auto-discover with the config removed |
+
+The `verify-docs` job used to overwrite the committed config with a generated
+two-check stand-in, which left the configuration this repository actually ships
+unverified.
 
 ## Usage
 
@@ -573,6 +612,8 @@ anti-hallucination-guard/
     check-hooks-verify.sh           -- verify against snapshot (anti-tampering)
     line-count-check.sh             -- enforce Rule 12 (anti-monolith)
     co-change-check.sh              -- enforce Rule 10 (buddy file detection)
+    tests/
+      regression.sh                 -- regression tests (co-change, audit)
   tools/
     verify-docs/                    -- built-in verify-docs (5 sections + discover + bump)
       src/
@@ -592,10 +633,12 @@ anti-hallucination-guard/
         init.ts                    -- quick config generator
         discover.ts                -- auto-discover orchestrator
         discover-versions.ts       -- find version files automatically
+        git-ignore.ts              -- ask git which paths are ignored
         discover-changelog.ts      -- find and verify CHANGELOG freshness
         discover-coverage.ts       -- find doc coverage gaps
         discover-baseline.ts       -- create/check file baselines
-        bump.ts                    -- atomic version bump
+        bump.ts                    -- version bump
+        bump-changelog.ts          -- CHANGELOG entry for a bump
       templates/
         pre-push                   -- hook template for verify-docs
         verify.yml                 -- GitHub Actions workflow
@@ -604,6 +647,13 @@ anti-hallucination-guard/
         simple/                    -- basic config
         monorepo/                  -- config with plugins and cross-repo
           verify-docs.plugins.ts   -- custom resolver plugin example
+      tests/
+        bump.test.ts                -- version bump regressions
+        cli-exit-code.test.ts       -- CLI exit code regressions
+        version-sync.test.ts        -- section 3 regressions
+        feature-status.test.ts      -- section 4 regressions
+        discover-versions.test.ts   -- version discovery regressions
+        _helpers.ts                 -- shared fixture helpers
       package.json
   skills/
     anti-hallucination-guard/
@@ -614,4 +664,4 @@ anti-hallucination-guard/
 
 ---
 
-v2.5.0 | 2026-06-14 | MIT
+v2.5.1 | 2026-10-13 | MIT

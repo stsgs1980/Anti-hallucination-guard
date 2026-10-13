@@ -137,10 +137,18 @@ if (!existsSync(fullConfigPath)) {
   console.log(`Source dirs:   ${sourceDirs.join(", ") || "none found"}`);
   console.log(`Version files: ${versionFilesCount}\n`);
 
+  // Exit code must follow the contract documented in --help:
+  //   0 = pass, 1 = mismatch/error.
+  // Mismatches found without a config file are still mismatches: CI and the
+  // pre-commit hook read this exit code, so exiting 0 here reports a pass
+  // for a project that just failed verification.
+  let exitCode = 0;
+
   if (isMinimal) {
     console.log("[warn] Minimal project structure -- showing discover report instead.\n");
     const discoverResult = discover(root);
     printDiscoverSections(discoverResult.sections);
+    if (discoverResult.errors > 0) exitCode = 1;
   } else {
     console.log("Running verification with auto-generated config...\n");
     if (ci) console.log("[CI mode] Cross-repo checks will be skipped.\n");
@@ -150,6 +158,7 @@ if (!existsSync(fullConfigPath)) {
 
     if (verifyResult.errors > 0) {
       console.log(`\n!! ${verifyResult.errors} mismatch(es) found!`);
+      exitCode = 1;
     } else {
       console.log("\nAll auto-discover checks consistent.");
     }
@@ -157,7 +166,7 @@ if (!existsSync(fullConfigPath)) {
 
   console.log(`\nTip: run "ahg init" to save config as ${configPath}`);
   console.log("     then customize it for your project.\n");
-  process.exit(0);
+  process.exit(exitCode);
 }
 
 // -- Load config and run verification ----------------------------------------

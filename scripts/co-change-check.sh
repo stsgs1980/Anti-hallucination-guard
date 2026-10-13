@@ -11,6 +11,12 @@
 #
 # Configuration: .ahg-cochange.json in project root
 # Bypass: [no-cochange] in commit message or COCHANGE_BYPASS=1 env
+#
+# Exit codes (contract shared with .git-hooks/pre-commit):
+#   0 = pass (all buddies present, or only warn-severity findings)
+#   1 = blocked (a severity=block violation was found)
+#   2 = rules could not be evaluated (no python3, python crashed).
+#       Non-blocking by default; set COCHANGE_STRICT=1 to block instead.
 # ============================================================
 
 set -euo pipefail
@@ -88,8 +94,14 @@ fi
 
 # -- Use python3 to parse JSON config and check --
 if ! command -v python3 &>/dev/null; then
-    # No python3 -> skip
-    exit 0
+    # Without python3 the rules CANNOT be evaluated. Skipping silently would
+    # report a pass for a commit that was never checked (fail-open).
+    warn "co-change-check: python3 not found -- co-change rules NOT evaluated"
+    if [ "${COCHANGE_STRICT:-0}" = "1" ]; then
+        err "COCHANGE_STRICT=1: refusing to pass an unchecked commit"
+        exit 1
+    fi
+    exit 2
 fi
 
 # Write staged files to a temp file to avoid env var size limits
@@ -101,6 +113,11 @@ echo "$STAGED" > "$_tmpfile"
 export COCHANGE_CONFIG="$CONFIG"
 export COCHANGE_STAGED_FILE="$_tmpfile"
 
+# `set -e` aborts the script as soon as a command exits non-zero, so the
+# translation below never ran: a "block" violation left the script carrying
+# python's raw exit code 2, which the pre-commit hook treats as an unexpected
+# error and only warns about -- the commit went through. Capture the status.
+set +e
 python3 -c '
 import json, sys, os, fnmatch
 
@@ -190,26 +207,33 @@ else:
     print("  [OK] All co-change buddies present")
     sys.exit(0)
 '
-
 result=$?
+set -e
 
 # Clean up temp file
 rm -f "$_tmpfile" 2>/dev/null || true
 
-# Exit code semantics:
-#   0 = pass (all buddies present, or only warnings)
-#   2 = blocked (severity=block violations found)
-#   1 = python error (unexpected)
-if [ "$result" -eq 2 ]; then
-    echo ""
-    err "Co-change violations found. Commit blocked."
-    err "Add missing buddy files or use [no-cochange] in commit message."
-    exit 1
-elif [ "$result" -eq 1 ]; then
-    # Unexpected python error -- warn but don't block
-    warn "co-change-check: unexpected error (exit code 1)"
-    exit 0
-fi
-
-# result=0 -> all good or only warnings
-exit 0
+# Exit code contract, shared with .git-hooks/pre-commit:
+#   0 = pass (all buddies present, or only warn-severity findings)
+#   1 = blocked (a severity=block violation was found)
+#   2 = rules could not be evaluated (interpreter missing, python crashed)
+case "$result" in
+    0)
+        # All good, or only warnings -- python already printed them.
+        exit 0
+        ;;
+    2)
+        echo ""
+        err "Co-change violations found. Commit blocked."
+        err "Add missing buddy files or use [no-cochange] in commit message."
+        exit 1
+        ;;
+    *)
+        warn "co-change-check: rules not evaluated (python exit code $result)"
+        if [ "${COCHANGE_STRICT:-0}" = "1" ]; then
+            err "COCHANGE_STRICT=1: refusing to pass an unchecked commit"
+            exit 1
+        fi
+        exit 2
+        ;;
+esac
