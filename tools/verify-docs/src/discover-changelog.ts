@@ -81,6 +81,23 @@ function hasEntryForVersion(content: string, version: string): boolean {
   return pattern.test(content);
 }
 
+/**
+ * True when the given CHANGELOG already documents this version.
+ * Lets callers keep a bump idempotent instead of stacking empty sections.
+ */
+export function changelogHasEntry(
+  root: string,
+  changelogFile: string,
+  version: string
+): boolean {
+  try {
+    const content = readFileSync(join(root, changelogFile), "utf-8");
+    return hasEntryForVersion(content, version);
+  } catch {
+    return false;
+  }
+}
+
 // -- Main discover function --------------------------------------------------
 
 export function discoverChangelog(

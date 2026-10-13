@@ -100,3 +100,35 @@ describe("bump: several occurrences in one file", () => {
     expect(result.failed).toEqual([]);
   });
 });
+
+describe("bump: CHANGELOG entry", () => {
+  test("does not duplicate an entry that already exists", () => {
+    const dir = pool.make({
+      "package.json": '{\n  "name": "fixture",\n  "version": "2.5.0"\n}\n',
+      "CHANGELOG.md":
+        "# Changelog\n\n## [2.5.1] - 2026-10-13\n\n- already documented\n",
+    });
+
+    const result = bumpVersion(dir, "2.5.1");
+    const changelog = read(dir, "CHANGELOG.md");
+
+    expect(changelog.match(/## \[2\.5\.1\]/g)?.length).toBe(1);
+    expect(changelog).toContain("- already documented");
+    expect(result.changelogUpdated).toBe(false);
+  });
+
+  test("adds an entry when the version is new", () => {
+    const dir = pool.make({
+      "package.json": '{\n  "name": "fixture",\n  "version": "2.5.0"\n}\n',
+      "CHANGELOG.md":
+        "# Changelog\n\n## [2.5.0] - 2026-06-14\n\n- old entry\n",
+    });
+
+    const result = bumpVersion(dir, "2.5.1");
+    const changelog = read(dir, "CHANGELOG.md");
+
+    expect(result.changelogUpdated).toBe(true);
+    expect(changelog).toContain("## [2.5.1] -");
+    expect(changelog).toContain("## [2.5.0] - 2026-06-14");
+  });
+});

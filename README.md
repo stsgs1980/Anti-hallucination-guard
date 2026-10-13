@@ -4,7 +4,7 @@
 # anti-hallucination-guard
 
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version 2.5.0](https://img.shields.io/badge/v2.5.0-2026--06--14-green.svg)]()
+[![Version 2.5.1](https://img.shields.io/badge/v2.5.1-2026--10--13-green.svg)]()
 [![Bash](https://img.shields.io/badge/Shell-Bash-4EAA25.svg?logo=gnu-bash&logoColor=white)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-verify--docs-3178C6.svg?logo=typescript&logoColor=white)]()
 [![Git Hooks](https://img.shields.io/badge/Git-Hooks-FF6600.svg?logo=git&logoColor=white)]()
@@ -145,8 +145,8 @@ Updates versions and generates configuration in one command:
 - `ahg baseline` -- creates .ahg-baseline.json for deletion tracking
 
 ```bash
-bash scripts/ahg.sh bump 2.5.0          # update all version files + CHANGELOG
-bash scripts/ahg.sh bump 2.5.0 --dry-run  # preview without writing
+bash scripts/ahg.sh bump 2.5.1          # update all version files + CHANGELOG
+bash scripts/ahg.sh bump 2.5.1 --dry-run  # preview without writing
 bash scripts/ahg.sh init                  # generate verify-docs.json
 bash scripts/ahg.sh baseline              # create file baseline
 ```
@@ -327,7 +327,7 @@ in the project root. This file records:
 
 ```json
 {
-  "ahgVersion": "2.5.0",
+  "ahgVersion": "2.5.1",
   "previousVersion": "2.0.0",
   "previousCommit": "abc1234",
   "currentCommit": "fd686cb",
@@ -633,6 +633,7 @@ anti-hallucination-guard/
         init.ts                    -- quick config generator
         discover.ts                -- auto-discover orchestrator
         discover-versions.ts       -- find version files automatically
+        git-ignore.ts              -- ask git which paths are ignored
         discover-changelog.ts      -- find and verify CHANGELOG freshness
         discover-coverage.ts       -- find doc coverage gaps
         discover-baseline.ts       -- create/check file baselines
@@ -663,4 +664,4 @@ anti-hallucination-guard/
 
 ---
 
-v2.5.0 | 2026-06-14 | MIT
+v2.5.1 | 2026-10-13 | MIT

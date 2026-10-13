@@ -3,7 +3,7 @@
 All notable changes to anti-hallucination-guard are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [2.5.1] - 2026-10-13
 
 ### Fixed
 
@@ -31,6 +31,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
   and prose such as "version v2.1 -> v2.5" matches the same patterns as a real
   version field, so verification reported phantom mismatches and `ahg bump`
   rewrote historical entries. Changelogs are excluded from version discovery.
+- verify-docs bump.ts: re-running a bump for a version already present in the
+  CHANGELOG stacked another empty "## [X.Y.Z]" section on top of the existing
+  one and still reported that the CHANGELOG was updated.
+- verify-docs discover-versions.ts: gitignored files were treated as version
+  files. .branch-protect-state.json carries a schema version of its own, and
+  `ahg bump` was about to overwrite it with the project version.
+- verify-docs discover-versions.ts: tools/verify-docs/ was skipped
+  unconditionally, so inside the AHG module repository itself `ahg bump` never
+  updated tools/verify-docs/package.json -- one of the four declared version
+  targets. A copy installed in a consumer project is still skipped.
 - verify-docs verify-section3.ts: a version target listed in the config but
   missing from disk was reported as "skip" and did not count as an error. It is
   an error now; set "optional": true to keep the old behaviour.
@@ -55,6 +65,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- pre-push (AHG module repo): now runs scripts/tests/regression.sh and
+  `bun test tools/verify-docs/tests/`. CI only triggers on push to main and on
+  PRs to main, so before this a broken branch surfaced at PR time. When bun is
+  absent the engine suite is reported as NOT run rather than skipped silently.
 - CI: validate.yml gained a `tests` job running `bun test
   tools/verify-docs/tests/` and `scripts/tests/regression.sh`. Without it the
   regression suites ran only on a developer machine, so a later commit could
@@ -71,6 +85,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 - audit.sh: verdicts describe process signals instead of accusing the agent of
   faking activity, and the report states that the score is not evidence that
   the work is correct.
+
+### Known limitations
+
+- Version discovery scans only the first 100 lines of a file. AGENT_RULES.md
+  carries its version at line 399, so `ahg bump` does not update that file; the
+  version check does report the mismatch, and the file is updated by hand.
 
 ## [2.5.0] - 2026-06-14
 

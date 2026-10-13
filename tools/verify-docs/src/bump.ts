@@ -14,7 +14,7 @@
 import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { discoverVersions } from "./discover-versions.js";
-import { discoverChangelog } from "./discover-changelog.js";
+import { discoverChangelog, changelogHasEntry } from "./discover-changelog.js";
 import { addChangelogEntry } from "./bump-changelog.js";
 
 // -- Result types ------------------------------------------------------------
@@ -188,17 +188,18 @@ export function bumpVersion(
     }
   }
 
-  // Update CHANGELOG if found
+  // Update CHANGELOG if found. Never add an entry that is already there:
+  // re-running the same bump used to stack another empty section on top.
   let changelogUpdated = false;
   const changelogInfo = discoverChangelog(root, newVersion);
-  if (changelogInfo.files.length > 0 && !dryRun) {
-    changelogUpdated = addChangelogEntry(
-      root,
-      newVersion,
-      changelogInfo.files[0]
-    );
-  } else if (changelogInfo.files.length > 0 && dryRun) {
-    changelogUpdated = true; // would update
+  if (changelogInfo.files.length > 0) {
+    const changelogFile = changelogInfo.files[0];
+    const alreadyDocumented = changelogHasEntry(root, changelogFile, newVersion);
+    if (dryRun) {
+      changelogUpdated = !alreadyDocumented; // would update
+    } else if (!alreadyDocumented) {
+      changelogUpdated = addChangelogEntry(root, newVersion, changelogFile);
+    }
   }
 
   return {

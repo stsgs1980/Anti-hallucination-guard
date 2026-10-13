@@ -9,9 +9,10 @@
 // version files automatically.
 // ============================================================================
 
-import { readFileSync, readdirSync, statSync } from "fs";
+import { readFileSync, readdirSync, statSync, existsSync } from "fs";
 import { join, extname } from "path";
 import type { LineResult } from "./types.js";
+import { gitIgnoredFiles, isIgnored } from "./git-ignore.js";
 
 // -- Common version patterns per file type -----------------------------------
 
@@ -98,17 +99,24 @@ const SKIP_DIRS = new Set([
   "anti-hallucination-guard",  // AHG module (submodule copy)
 ]);
 
-function walkDir(dir: string, root: string, results: string[]): void {
+function walkDir(
+  dir: string,
+  root: string,
+  results: string[],
+  isAhgModule: boolean
+): void {
   const fullDir = join(root, dir);
   try {
     const entries = readdirSync(fullDir, { withFileTypes: true });
     for (const entry of entries) {
       if (SKIP_DIRS.has(entry.name)) continue;
       const relPath = dir ? `${dir}/${entry.name}` : entry.name;
-      // Skip installed verify-docs copy (not part of host project versions)
-      if (relPath.startsWith("tools/verify-docs/")) continue;
+      // An installed copy of verify-docs is not part of the host project's
+      // versions. But when the project root IS the AHG module, that very
+      // package.json is one of the files a bump has to update.
+      if (!isAhgModule && relPath.startsWith("tools/verify-docs/")) continue;
       if (entry.isDirectory()) {
-        walkDir(relPath, root, results);
+        walkDir(relPath, root, results, isAhgModule);
       } else if (entry.isFile()) {
         results.push(relPath);
       }
@@ -158,13 +166,17 @@ function extractVersion(
 
 export function discoverVersions(root: string): VersionDiscoverResult {
   const allFiles: string[] = [];
-  walkDir("", root, allFiles);
+  const isAhgModule =
+    existsSync(join(root, "setup.sh")) && existsSync(join(root, "AGENT_RULES.md"));
+  walkDir("", root, allFiles, isAhgModule);
 
+  const ignored = gitIgnoredFiles(root);
   const discovered: DiscoveredVersion[] = [];
 
   for (const file of allFiles) {
     const ext = extname(file);
     if (!PATTERNS[ext]) continue;
+    if (isIgnored(file, ignored)) continue;
 
     const { version, pattern } = extractVersion(file, root);
     if (version === null) continue;

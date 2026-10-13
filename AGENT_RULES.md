@@ -396,4 +396,4 @@ Stage Summary:
 
 ---
 
-v2.5.0 | 2026-06-14 | anti-hallucination-guard
+v2.5.1 | 2026-10-13 | anti-hallucination-guard

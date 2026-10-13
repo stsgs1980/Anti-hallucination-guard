@@ -125,6 +125,7 @@ ALLOWED=(
     "tools/verify-docs/src/discover-project.ts"
     "tools/verify-docs/src/init.ts"
     "tools/verify-docs/src/discover-versions.ts"
+    "tools/verify-docs/src/git-ignore.ts"
     "tools/verify-docs/src/discover-changelog.ts"
     "tools/verify-docs/src/discover-coverage.ts"
     "tools/verify-docs/src/discover-baseline.ts"

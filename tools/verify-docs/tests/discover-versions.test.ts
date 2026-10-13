@@ -10,6 +10,7 @@
 
 import { describe, test, expect, afterEach } from "bun:test";
 import { discoverVersions } from "../src/discover-versions.js";
+import { execFileSync } from "child_process";
 import { bumpVersion } from "../src/bump.js";
 import { FixturePool, read } from "./_helpers.js";
 
@@ -47,5 +48,49 @@ describe("CHANGELOG is not a version file", () => {
     expect(changelog).toContain("## [2.5.0] - 2026-06-14");
     expect(changelog).toContain("entry mentioning 2.5.0");
     expect(read(dir, "package.json")).toContain('"version": "3.0.0"');
+  });
+});
+
+describe("gitignored files are not version files", () => {
+  test("runtime state with its own version field is skipped", () => {
+    const dir = pool.make({
+      "package.json": '{\n  "name": "fixture",\n  "version": "2.5.1"\n}\n',
+      ".gitignore": "state.json\n",
+      "state.json": '{\n  "version": "1.0"\n}\n',
+    });
+    execFileSync("git", ["-C", dir, "init", "-q"], { stdio: "ignore" });
+
+    const found = discoverVersions(dir).files.map((f) => f.file);
+
+    expect(found).not.toContain("state.json");
+    expect(found).toContain("package.json");
+  });
+});
+
+describe("verify-docs copy under tools/", () => {
+  test("is a version file when the root is the AHG module itself", () => {
+    const dir = pool.make({
+      "setup.sh": "#!/bin/sh\n",
+      "AGENT_RULES.md": "# rules\n",
+      "README.md": "# App\n\n| v2.5.1 | current |\n",
+      "tools/verify-docs/package.json":
+        '{\n  "name": "verify-docs",\n  "version": "2.5.1"\n}\n',
+    });
+
+    const found = discoverVersions(dir).files.map((f) => f.file);
+
+    expect(found).toContain("tools/verify-docs/package.json");
+  });
+
+  test("is skipped inside a consumer project", () => {
+    const dir = pool.make({
+      "package.json": '{\n  "name": "consumer",\n  "version": "1.2.3"\n}\n',
+      "tools/verify-docs/package.json":
+        '{\n  "name": "verify-docs",\n  "version": "2.5.1"\n}\n',
+    });
+
+    const found = discoverVersions(dir).files.map((f) => f.file);
+
+    expect(found).not.toContain("tools/verify-docs/package.json");
   });
 });
