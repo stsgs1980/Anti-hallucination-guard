@@ -85,7 +85,10 @@ bash anti-hallucination-guard/setup.sh
 | `scripts/check-hooks-verify.sh` | Verify hooks/configs against snapshot (anti-tampering) |
 | `scripts/line-count-check.sh` | Enforce Rule 12: block commit if file exceeds 250 lines |
 | `scripts/co-change-check.sh` | Enforce Rule 10: warn, or block a `severity: "block"` pair, when buddy files miss a commit |
+| `scripts/check.sh` | The gate: one registry of checks, run by CI, pre-push and humans |
+| `scripts/doctor.sh` | Report which tools and configs this environment has |
 | `scripts/tests/regression.sh` | Regression tests for the shell scripts (run in a disposable git repo) |
+| `scripts/tests/check-gate.sh` | Self-tests for the gate itself |
 | `scripts/branch-protect.sh` | Branch protection orchestrator (requires `gh` CLI) |
 | `scripts/branch-protect-lib.sh` | Branch protection config + helpers |
 | `scripts/check-hooks-lib.sh` | Shared functions for hook integrity checks |
@@ -476,34 +479,59 @@ python3 is not installed. Code 2 is non-blocking by default so that a missing
 interpreter cannot make the repository uncommittable; set `COCHANGE_STRICT=1`
 to treat an unevaluated check as a block instead.
 
-## Tests
+## The gate: `ahg check`
+
+Every check lives in one registry, `scripts/check.sh`. CI, the pre-push hook and
+a developer at the terminal run the same list, so they cannot drift apart.
 
 ```
-bash scripts/tests/regression.sh        # shell checks, in a disposable git repo
-cd tools/verify-docs && bun test tests/  # verify-docs engine
+bash scripts/ahg.sh check                     # everything applicable here
+bash scripts/ahg.sh check --stage=ci          # what CI runs
+bash scripts/ahg.sh check --list              # print the registry
+bash scripts/ahg.sh check --only=syntax,linecount
+bash scripts/ahg.sh doctor                    # what this environment can run
 ```
 
-Both suites build their fixtures in a temporary directory and delete them
-afterwards; neither one touches the repository it is run from. They cover the
-defects listed in CHANGELOG.md: a `block` co-change violation must reject the
-commit, a mismatch must produce a non-zero exit code, a version bump must not
-corrupt the surrounding text, a missing version target must count as an error,
-and a TODO-only implementation file must not read as "implemented".
+Stages: `all` (default), `ci`, `push`, `commit`. Checks that only make sense
+inside the AHG module itself skip themselves in a consumer project.
+
+A check that cannot run because a tool is missing is reported as `SKIP`, never
+as `PASS`. With `--strict` a skip fails the gate; that is what CI uses.
+
+| Check | Stages | Requires |
+|-------|--------|----------|
+| `syntax` | ci push commit | - |
+| `linecount` | ci push commit | - |
+| `cochange` | commit | python3 |
+| `verifydocs` | ci push commit | bun |
+| `autodiscover` | ci | bun |
+| `purity` | ci push | module only |
+| `branchprotect` | ci | module only |
+| `tests_engine` | ci push | bun, module only |
+| `tests_shell` | ci push | module only |
+| `tests_gate` | ci push | module only |
+
+### Tests
+
+```
+bash scripts/ahg.sh test    # all suites, through the gate
+```
+
+Three suites: `tools/verify-docs/tests/` (engine), `scripts/tests/regression.sh`
+(shell behaviour, in a disposable git repo) and `scripts/tests/check-gate.sh`
+(the gate itself). They build their fixtures in a temporary directory and delete
+them afterwards, and they cover the defects listed in CHANGELOG.md: a `block`
+co-change violation must reject the commit, a mismatch must produce a non-zero
+exit code, a version bump must not corrupt the surrounding text, a missing
+version target must count as an error, a TODO-only implementation file must not
+read as "implemented", and a check that could not run must not be reported as a
+pass.
 
 ### In CI
 
-`.github/workflows/validate.yml` runs three jobs on every push and pull request
-to `main`:
-
-| Job | What it runs |
-|-----|--------------|
-| `validate` | module purity, branch-protect self-test, shell syntax |
-| `tests` | `bun test tools/verify-docs/tests/`, `scripts/tests/regression.sh` |
-| `verify-docs` | the committed `verify-docs.json`, then auto-discover with the config removed |
-
-The `verify-docs` job used to overwrite the committed config with a generated
-two-check stand-in, which left the configuration this repository actually ships
-unverified.
+`.github/workflows/validate.yml` has a single job: it prints `ahg doctor`, then
+runs `ahg check --stage=ci --strict`. It used to keep its own three-job list of
+the same checks; the list now lives only in `check.sh`.
 
 ## Usage
 
@@ -612,8 +640,11 @@ anti-hallucination-guard/
     check-hooks-verify.sh           -- verify against snapshot (anti-tampering)
     line-count-check.sh             -- enforce Rule 12 (anti-monolith)
     co-change-check.sh              -- enforce Rule 10 (buddy file detection)
+    check.sh                        -- the gate (one registry of checks)
+    doctor.sh                       -- environment report
     tests/
       regression.sh                 -- regression tests (co-change, audit)
+      check-gate.sh                 -- self-tests for check.sh
   tools/
     verify-docs/                    -- built-in verify-docs (5 sections + discover + bump)
       src/

@@ -54,6 +54,10 @@ deploy_script "check-hooks-snapshot.sh"
 deploy_script "check-hooks-verify.sh"
 deploy_script "line-count-check.sh"
 deploy_script "co-change-check.sh"
+# check.sh runs the whole gate; its module-only checks skip themselves
+# in a consumer project, so what remains is syntax, line limit and docs.
+deploy_script "check.sh"
+deploy_script "doctor.sh"
 
 # -- Deploy .ahgrc config (if not already present) ---------------------------
 if [ "$MODULE_ROOT" != "$PROJECT_ROOT" ]; then

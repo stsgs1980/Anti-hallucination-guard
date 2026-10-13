@@ -70,6 +70,9 @@ if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
     echo "  bash scripts/ahg.sh <command> [args]"
     echo ""
     echo "COMMANDS"
+    echo "  check [--stage=ci]      Run the whole gate (one list, see check.sh)"
+    echo "  doctor [--strict]       Report what this environment can run"
+    echo "  test                    Run every test suite"
     echo "  verify [--ci]           Verify docs (auto-discover if no config!)"
     echo "  discover                Auto-scan project (no config needed)"
     echo "  bump <version>          Update version in all files"
@@ -197,6 +200,32 @@ case "${1:-}" in
         echo "ahg: audit.sh not found"
         exit 1
     fi
+    ;;
+
+  check)
+    shift
+    if [ -f "$SCRIPT_DIR/check.sh" ]; then
+        bash "$SCRIPT_DIR/check.sh" "$@"
+    else
+        echo "ahg: check.sh not found"
+        exit 1
+    fi
+    ;;
+
+  doctor)
+    shift
+    if [ -f "$SCRIPT_DIR/doctor.sh" ]; then
+        bash "$SCRIPT_DIR/doctor.sh" "$@"
+    else
+        echo "ahg: doctor.sh not found"
+        exit 1
+    fi
+    ;;
+
+  test)
+    shift
+    [ -f "$SCRIPT_DIR/check.sh" ] || { echo "ahg: check.sh not found"; exit 1; }
+    bash "$SCRIPT_DIR/check.sh" --only=tests_engine,tests_shell,tests_gate "$@"
     ;;
 
   validate)
